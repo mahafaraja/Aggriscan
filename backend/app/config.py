@@ -11,7 +11,7 @@ class Settings:
     )
     SECRET_KEY: str = os.getenv(
         "SECRET_KEY",
-        "super-secret-key-for-agriscan-vectoria-university-it-project-2026"
+        "super-secret-key-for-agriscan-vectoria-university-bcs-project-2026"
     )
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
