@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "Agriscan",
+    "slug": "agriscan",
+    "version": "1.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+}

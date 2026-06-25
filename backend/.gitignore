@@ -1,0 +1,44 @@
+# === Python Cache & Compiled Bytecode ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# === Virtual Environments (Crucial to ignore) ===
+.venv/
+venv/
+ENV/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# === Environment Variables & Secrets (NEVER commit these) ===
+.env
+.env.local
+.env.*
+secrets.json
+
+# === Databases & Local Storage ===
+*.sqlite3
+*.db
+instance/
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.mo
+*.pot
+
+# === IDEs, Editors & OS Metadata ===
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+.DS_Store
+Thumbs.db
