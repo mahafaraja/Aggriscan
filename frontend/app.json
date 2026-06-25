@@ -5,8 +5,12 @@
     "version": "1.0.0",
     "extra": {
       "eas": {
-        "projectId": "00000000-0000-0000-0000-000000000000"
+        "projectId": "03a79f6c-d066-476d-bca2-ddb2a659b8fc"
       }
+    },
+    "owner": "faraja_maha",
+    "android": {
+      "package": "com.faraja_maha.agriscan"
     }
   }
 }
