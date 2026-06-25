@@ -236,16 +236,15 @@ npm install
 ```
 
 **Configure API endpoint:**
-The API URL is configured in `src/config/api.ts`:
-```typescript
-export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ??
-  (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000');
+The API URL is configured in `src/config/api.ts`.
+For local development, the default is:
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
 
-For production, set environment variable:
+For a hosted backend, set:
 ```bash
-EXPO_PUBLIC_API_BASE_URL=http://your-backend-url:8000
+EXPO_PUBLIC_API_BASE_URL=https://your-backend-url
 ```
 
 **Start development server:**
@@ -258,6 +257,30 @@ npx expo start
 - `npx expo start --android` - Start with Android emulator
 - `npx expo start --ios` - Start with iOS simulator
 - `npx expo start --web` - Start web version
+
+### 4. Build and Share the Android App
+
+For a quick demo build, use Expo EAS:
+
+```bash
+cd frontend
+npm install -g eas-cli
+eas login
+eas build --platform android --profile preview
+```
+
+Once the build completes, Expo will provide a link to install the app on an Android device or emulator.
+
+**How to use the Expo build link:**
+1. Open the build link on your phone or emulator.
+2. Tap the install button.
+3. Allow installation if Android asks for permission.
+4. The app will appear in the app drawer like a normal installed app.
+
+**Notes:**
+- Preview builds are great for demos and testing.
+- Production builds are recommended for wider distribution.
+- The app is installed from the Expo build link, not from a local file in the project folder.
 
 **TypeScript checking:**
 ```bash
