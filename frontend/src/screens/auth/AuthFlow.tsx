@@ -16,6 +16,25 @@ interface AuthFlowProps {
   onAuthSuccess: () => void;
 }
 
+const normalizePhoneNumber = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return value.trim();
+
+  if (digits.startsWith('256')) {
+    return `+${digits}`;
+  }
+
+  if (digits.startsWith('0')) {
+    return `+256${digits.slice(1)}`;
+  }
+
+  if (digits.startsWith('7')) {
+    return `+256${digits}`;
+  }
+
+  return value.startsWith('+') ? value : `+${digits}`;
+};
+
 export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
   const [step, setStep] = useState<AuthStep>('welcome');
   const [phone, setPhone] = useState('');
@@ -47,6 +66,8 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
       return;
     }
 
+    const normalizedPhone = normalizePhoneNumber(phone);
+    setPhone(normalizedPhone);
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms/send`, {
@@ -54,7 +75,7 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ phone_number: phone }),
+        body: JSON.stringify({ phone_number: normalizedPhone }),
       });
 
       if (!response.ok) {
@@ -77,6 +98,8 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
       return;
     }
 
+    const normalizedPhone = normalizePhoneNumber(phone);
+    setPhone(normalizedPhone);
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms/verify`, {
@@ -85,7 +108,7 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phone_number: phone,
+          phone_number: normalizedPhone,
           code: codeString,
         }),
       });
@@ -98,7 +121,7 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
       
       // Store the token
       await SecureStore.setItemAsync('auth_token', data.access_token);
-      await SecureStore.setItemAsync('user_phone', phone);
+      await SecureStore.setItemAsync('user_phone', normalizedPhone);
       
       goToSuccess();
     } catch (error) {

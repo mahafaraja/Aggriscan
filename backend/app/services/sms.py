@@ -1,9 +1,32 @@
 import random
 import logging
+import re
 from typing import Optional
 from ..config import settings
 
 logger = logging.getLogger(__name__)
+
+DEMO_PHONE_NUMBER = "+256762000000"
+DEMO_VERIFICATION_CODE = "123456"
+
+
+def normalize_phone_number(phone_number: str) -> str:
+    """Normalize common Uganda phone formats to E.164 for consistent auth."""
+    if not phone_number:
+        return ""
+
+    digits = re.sub(r"\D", "", phone_number)
+    if not digits:
+        return phone_number.strip()
+
+    if digits.startswith("256"):
+        return f"+{digits}"
+    if digits.startswith("0"):
+        return f"+256{digits[1:]}"
+    if digits.startswith("7"):
+        return f"+256{digits}"
+    return f"+{digits}"
+
 
 class SMSService:
     def __init__(self):
@@ -12,12 +35,13 @@ class SMSService:
     
     def generate_verification_code(self, phone_number: str) -> str:
         """Generate a 6-digit verification code"""
-        code = str(random.randint(100000, 999999))
-        self.verification_codes[phone_number] = {
+        normalized_phone = normalize_phone_number(phone_number)
+        code = DEMO_VERIFICATION_CODE if normalized_phone == DEMO_PHONE_NUMBER else str(random.randint(100000, 999999))
+        self.verification_codes[normalized_phone] = {
             'code': code,
             'expires_at': None  # Add expiration logic if needed
         }
-        logger.info(f"Generated verification code for {phone_number}: {code}")
+        logger.info(f"Generated verification code for {phone_number} ({normalized_phone}): {code}")
         return code
     
     def send_verification_code(self, phone_number: str, message: str) -> bool:
@@ -42,20 +66,22 @@ class SMSService:
     
     def verify_code(self, phone_number: str, code: str) -> bool:
         """Verify the submitted code matches the stored one"""
+        normalized_phone = normalize_phone_number(phone_number)
+
         # Demo/test credentials bypass
-        if phone_number == "+256762000000" and code == "123456":
-            logger.info(f"Demo credentials used for {phone_number}")
+        if normalized_phone == DEMO_PHONE_NUMBER and code == DEMO_VERIFICATION_CODE:
+            logger.info(f"Demo credentials used for {phone_number} ({normalized_phone})")
             return True
         
-        stored_data = self.verification_codes.get(phone_number)
+        stored_data = self.verification_codes.get(normalized_phone)
         if not stored_data:
             return False
         
         is_valid = stored_data['code'] == code
         if is_valid:
             # Clean up after successful verification
-            del self.verification_codes[phone_number]
-            logger.info(f"Successfully verified code for {phone_number}")
+            del self.verification_codes[normalized_phone]
+            logger.info(f"Successfully verified code for {phone_number} ({normalized_phone})")
         
         return is_valid
     
