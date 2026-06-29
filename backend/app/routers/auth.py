@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 from ..database import get_db
 from .. import schemas, crud, auth
-from ..services.sms import get_sms_service, normalize_phone_number
+from ..services.sms import get_sms_service, normalize_phone_number, is_demo_phone_number
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -70,23 +70,31 @@ def verify_sms_code(request: schemas.SMSVerifyRequest, db: Session = Depends(get
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired verification code"
         )
-    
-    # Check if user exists, create if not
-    user = crud.get_user_by_phone(db, phone_number=normalized_phone)
-    if not user:
-        # Auto-register with default farmer role
-        user_in = schemas.UserCreate(
-            phone_number=normalized_phone,
-            password="default_password",  # Will be changed on first login
-            role="farmer",
-            sub_county="Unknown"
-        )
-        user = crud.create_user(db=db, user_in=user_in)
+
+    demo_auth = is_demo_phone_number(normalized_phone)
+    if demo_auth:
+        role = "farmer"
+        subject = normalized_phone
+    else:
+        # Check if user exists, create if not
+        user = crud.get_user_by_phone(db, phone_number=normalized_phone)
+        if not user:
+            # Auto-register with default farmer role
+            user_in = schemas.UserCreate(
+                phone_number=normalized_phone,
+                password="default_password",  # Will be changed on first login
+                role="farmer",
+                sub_county="Unknown"
+            )
+            user = crud.create_user(db=db, user_in=user_in)
+
+        role = user.role
+        subject = user.phone_number
     
     # Issue JWT token
     access_token_expires = timedelta(minutes=auth.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
-        data={"sub": user.phone_number, "role": user.role}, 
+        data={"sub": subject, "role": role}, 
         expires_delta=access_token_expires
     )
     

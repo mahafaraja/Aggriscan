@@ -28,6 +28,11 @@ def normalize_phone_number(phone_number: str) -> str:
     return f"+{digits}"
 
 
+def is_demo_phone_number(phone_number: str) -> bool:
+    """Return True for the temporary demo authentication phone number."""
+    return normalize_phone_number(phone_number) == DEMO_PHONE_NUMBER
+
+
 class SMSService:
     def __init__(self):
         self.provider = settings.SMS_PROVIDER
@@ -36,7 +41,7 @@ class SMSService:
     def generate_verification_code(self, phone_number: str) -> str:
         """Generate a 6-digit verification code"""
         normalized_phone = normalize_phone_number(phone_number)
-        code = DEMO_VERIFICATION_CODE if normalized_phone == DEMO_PHONE_NUMBER else str(random.randint(100000, 999999))
+        code = DEMO_VERIFICATION_CODE if is_demo_phone_number(normalized_phone) else str(random.randint(100000, 999999))
         self.verification_codes[normalized_phone] = {
             'code': code,
             'expires_at': None  # Add expiration logic if needed
@@ -69,7 +74,7 @@ class SMSService:
         normalized_phone = normalize_phone_number(phone_number)
 
         # Demo/test credentials bypass
-        if normalized_phone == DEMO_PHONE_NUMBER and code == DEMO_VERIFICATION_CODE:
+        if is_demo_phone_number(normalized_phone) and code == DEMO_VERIFICATION_CODE:
             logger.info(f"Demo credentials used for {phone_number} ({normalized_phone})")
             return True
         
