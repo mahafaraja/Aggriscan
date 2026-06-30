@@ -19,3 +19,11 @@ services:
         value: 1440
       - key: SMS_PROVIDER
         value: mock
+
+databases:
+  - name: agriscan_backend_db
+    engine: postgresql
+    plan: starter
+    region: oregon
+    version: "18"
+    databaseName: agriscan
