@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import timedelta
-from ..database import get_db
+from sqlalchemy.orm import Session
+from ..database import SessionLocal, get_db
 from .. import schemas, crud, auth
 from ..services.sms import get_sms_service, normalize_phone_number, is_demo_phone_number
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -57,14 +60,14 @@ def send_sms_verification(request: schemas.SMSSendRequest):
     return {"message": "Verification code sent successfully"}
 
 @router.post("/sms/verify", response_model=schemas.Token)
-def verify_sms_code(request: schemas.SMSVerifyRequest, db: Session = Depends(get_db)):
+def verify_sms_code(request: schemas.SMSVerifyRequest):
     """
     Verify SMS code and issue JWT token if valid.
     Creates user if not exists (auto-registration).
     """
     normalized_phone = normalize_phone_number(request.phone_number)
     sms_service = get_sms_service()
-    
+
     if not sms_service.verify_code(normalized_phone, request.code):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -72,30 +75,37 @@ def verify_sms_code(request: schemas.SMSVerifyRequest, db: Session = Depends(get
         )
 
     demo_auth = is_demo_phone_number(normalized_phone)
-    if demo_auth:
-        role = "farmer"
-        subject = normalized_phone
-    else:
-        # Check if user exists, create if not
-        user = crud.get_user_by_phone(db, phone_number=normalized_phone)
-        if not user:
-            # Auto-register with default farmer role
-            user_in = schemas.UserCreate(
-                phone_number=normalized_phone,
-                password="default_password",  # Will be changed on first login
-                role="farmer",
-                sub_county="Unknown"
-            )
-            user = crud.create_user(db=db, user_in=user_in)
+    role = "farmer"
+    subject = normalized_phone
 
-        role = user.role
-        subject = user.phone_number
-    
-    # Issue JWT token
+    if not demo_auth:
+        db = SessionLocal()
+        try:
+            user = crud.get_user_by_phone(db, phone_number=normalized_phone)
+            if not user:
+                user_in = schemas.UserCreate(
+                    phone_number=normalized_phone,
+                    password="default_password",  # Will be changed on first login
+                    role="farmer",
+                    sub_county="Unknown"
+                )
+                user = crud.create_user(db=db, user_in=user_in)
+
+            role = user.role
+            subject = user.phone_number
+        except Exception as exc:
+            logger.error(f"Failed to verify SMS user auth for {normalized_phone}: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error while verifying user"
+            )
+        finally:
+            db.close()
+
     access_token_expires = timedelta(minutes=auth.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
         data={"sub": subject, "role": role}, 
         expires_delta=access_token_expires
     )
-    
+
     return {"access_token": access_token, "token_type": "bearer"}

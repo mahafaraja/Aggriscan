@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from .database import engine, Base, SessionLocal
 from .routers import auth, reports
 from .models import User
@@ -48,6 +49,16 @@ app = FastAPI(
     description="Geospatial Epidemiological Backend for Cassava and Banana Crop Disease Diagnostics in Uganda",
     version="1.0.0"
 )
+
+@app.get("/health")
+def health_check():
+    try:
+        from .database import engine
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return {"database": "ok", "status": "ok"}
+    except Exception as exc:
+        return {"database": "error", "detail": str(exc), "status": "failed"}
 
 # CORS configurations for local React Native testing
 app.add_middleware(
