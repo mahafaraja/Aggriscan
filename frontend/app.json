@@ -22,7 +22,7 @@
       ]
     },
     "ios": {
-      "bundleIdentifier": "com.faraja_maha.agriscan",
+      "bundleIdentifier": "com.faraja-maha.agriscan",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
