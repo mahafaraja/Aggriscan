@@ -10,7 +10,43 @@
     },
     "owner": "faraja_maha",
     "android": {
-      "package": "com.faraja_maha.agriscan"
-    }
+      "package": "com.faraja_maha.agriscan",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.faraja_maha.agriscan",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "NSCameraUsageDescription": "Allow Agriscan to access your camera to scan crop leaves for disease detection",
+        "NSLocationWhenInUseUsageDescription": "Allow Agriscan to access your location for geospatial disease mapping",
+        "NSPhotoLibraryUsageDescription": "Allow Agriscan to access your photo library to select images for scanning"
+      }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "minSdkVersion": 23,
+            "targetSdkVersion": 34,
+            "compileSdkVersion": 34
+          },
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ]
+    ]
   }
 }
