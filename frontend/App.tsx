@@ -13,6 +13,8 @@ import HealthyScreen from './src/screens/HealthyScreen';
 import { initSQLiteDatabase } from './src/services/db';
 import { theme } from './src/theme/Index';
 import { ScanPayload } from './src/types/scan';
+import * as SecureStore from 'expo-secure-store';
+import { setupAutoSync } from './src/services/sync';
 
 type Screen =
   | 'Auth'
@@ -27,11 +29,41 @@ type Screen =
 function App() {
   const [screen, setScreen] = useState<Screen>('Auth');
   const [latestScan, setLatestScan] = useState<ScanPayload | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     initSQLiteDatabase().catch((error) => {
       console.error('App: SQLite initialization failed:', error);
     });
+
+    // Check for existing authentication on app startup
+    const checkAuthStatus = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('auth_token');
+        if (token) {
+          // User is already authenticated, go directly to Home
+          setScreen('Home');
+        }
+      } catch (error) {
+        console.error('App: Auth check failed:', error);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuthStatus();
+
+    // Setup auto-sync for reports
+    const cleanupSync = setupAutoSync((result) => {
+      if (result.synced > 0) {
+        console.log(`App: Auto-synced ${result.synced} reports to backend`);
+      }
+    });
+
+    // Cleanup on unmount
+    return () => {
+      cleanupSync();
+    };
   }, []);
 
   const onNavigate = (nextScreen: Exclude<Screen, 'Auth' | 'ScanResult' | 'TreatmentPrevention' | 'Healthy'>) =>
@@ -47,6 +79,17 @@ function App() {
     setLatestScan(null);
     setScreen('Camera');
   };
+
+  if (isCheckingAuth) {
+    // Show a loading screen while checking authentication
+    return (
+      <SafeAreaProvider>
+        <View style={styles.container}>
+          <StatusBar style="light" />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>

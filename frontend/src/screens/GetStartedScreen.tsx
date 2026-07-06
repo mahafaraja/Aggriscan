@@ -13,7 +13,7 @@ export default function GetStartedScreen({ onGetStarted }: GetStartedScreenProps
       <View style={styles.content}>
         <BrandLogo style={styles.logo} />
         
-        <Text style={styles.welcomeText}>Welcome Samin!</Text>
+        <Text style={styles.welcomeText}>Welcome</Text>
         
         <TouchableOpacity style={styles.button} onPress={onGetStarted}>
           <Text style={styles.buttonText}>Get Start</Text>

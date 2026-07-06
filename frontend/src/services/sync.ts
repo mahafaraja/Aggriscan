@@ -1,64 +1,133 @@
-import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL } from '../config/api';
 import { getPendingReports, markReportsAsSynced } from './db';
+import { API_BASE_URL } from '../config/api';
 
-export const syncOfflineReports = async (): Promise<number> => {
+/**
+ * Sync pending reports to the backend server
+ * This ensures scan data is available for the admin dashboard
+ */
+export async function syncPendingReports(): Promise<{ synced: number; failed: number }> {
   try {
-    // 1. Fetch pending reports from SQLite cache
     const pendingReports = await getPendingReports();
+    
     if (pendingReports.length === 0) {
-      console.log("Sync Engine: No pending reports found.");
-      return 0;
+      console.log('Sync: No pending reports to sync');
+      return { synced: 0, failed: 0 };
     }
 
-    // 2. Fetch authenticated JWT from secure memory storage
-    const token = await SecureStore.getItemAsync('user_token');
+    console.log(`Sync: Found ${pendingReports.length} pending reports to sync`);
+    
+    // Get auth token
+    const token = await getAuthToken();
     if (!token) {
-      console.warn("Sync Engine: Sync skipped. User is not authenticated.");
-      return 0;
+      console.log('Sync: User not authenticated, skipping sync');
+      return { synced: 0, failed: pendingReports.length };
     }
 
-    console.log(`Sync Engine: Attempting to upload ${pendingReports.length} pending reports...`);
+    const syncedIds: string[] = [];
+    const failedIds: string[] = [];
 
-    // 3. Format payload matching backend ReportCreate schema
-    const payload = pendingReports.map(report => ({
-      crop_type: report.crop_type,
-      disease_label: report.disease_label,
-      confidence_score: report.confidence_score,
-      latitude: report.latitude,
-      longitude: report.longitude,
-      severity: report.severity,
-      offline_created_at: report.offline_created_at,
-      image_url: report.image_url || null
-    }));
+    // Sync each report
+    for (const report of pendingReports) {
+      try {
+        const success = await syncReportToBackend(report, token);
+        if (success) {
+          syncedIds.push(report.id);
+        } else {
+          failedIds.push(report.id);
+        }
+      } catch (error) {
+        console.error(`Sync: Failed to sync report ${report.id}:`, error);
+        failedIds.push(report.id);
+      }
+    }
 
-    // 4. Post batch payload to FastAPI sync route
+    // Mark synced reports
+    if (syncedIds.length > 0) {
+      await markReportsAsSynced(syncedIds);
+      console.log(`Sync: Successfully synced ${syncedIds.length} reports`);
+    }
+
+    if (failedIds.length > 0) {
+      console.log(`Sync: Failed to sync ${failedIds.length} reports (will retry later)`);
+    }
+
+    return { synced: syncedIds.length, failed: failedIds.length };
+  } catch (error) {
+    console.error('Sync: Error during sync:', error);
+    return { synced: 0, failed: 0 };
+  }
+}
+
+/**
+ * Sync a single report to the backend
+ */
+async function syncReportToBackend(report: any, token: string): Promise<boolean> {
+  try {
     const response = await fetch(`${API_BASE_URL}/api/v1/reports/sync`, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify([{
+        crop_type: report.crop_type,
+        disease_label: report.disease_label,
+        confidence_score: report.confidence_score,
+        latitude: report.latitude,
+        longitude: report.longitude,
+        severity: report.severity,
+        offline_created_at: report.offline_created_at,
+      }]),
     });
 
-    if (response.status === 201) {
-      const successData = await response.json();
-      console.log("Sync Engine: Remote ingestion successful. Updating SQLite statuses...");
-      
-      // Extract array of synced IDs
-      const syncedIds = pendingReports.map(r => r.id);
-      
-      // Update local storage values to 'SYNCED'
-      await markReportsAsSynced(syncedIds);
-      return syncedIds.length;
-    } else {
-      console.error(`Sync Engine: Backend upload failed with status ${response.status}`);
-      return 0;
+    if (!response.ok) {
+      console.error(`Sync: Backend returned status ${response.status}`);
+      return false;
     }
 
+    return true;
   } catch (error) {
-    console.error("Sync Engine: Synchronization network connection failed:", error);
-    return 0;
+    console.error('Sync: Error syncing report to backend:', error);
+    return false;
   }
-};
+}
+
+/**
+ * Get auth token from secure storage
+ */
+async function getAuthToken(): Promise<string | null> {
+  try {
+    const { expoSecureStore } = await import('expo-secure-store');
+    return await expoSecureStore.getItemAsync('auth_token');
+  } catch (error) {
+    console.error('Sync: Error getting auth token:', error);
+    return null;
+  }
+}
+
+/**
+ * Auto-sync reports when app comes to foreground
+ * This ensures data is synced regularly without user intervention
+ */
+export function setupAutoSync(onSyncComplete?: (result: { synced: number; failed: number }) => void): () => void {
+  // Sync immediately
+  syncPendingReports().then(onSyncComplete);
+
+  // Set up periodic sync every 5 minutes
+  const intervalId = setInterval(() => {
+    syncPendingReports().then(onSyncComplete);
+  }, 5 * 60 * 1000);
+
+  // Return cleanup function
+  return () => {
+    clearInterval(intervalId);
+  };
+}
+
+/**
+ * Manual sync trigger (e.g., when user pulls to refresh)
+ */
+export async function manualSync(): Promise<{ synced: number; failed: number }> {
+  console.log('Sync: Manual sync triggered');
+  return await syncPendingReports();
+}
