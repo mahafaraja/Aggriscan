@@ -1,339 +1,223 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { GalleryAdd } from 'iconsax-react-native';
-import { getLocalHistory } from '../services/db';
-import { syncOfflineReports } from '../services/sync';
+import { CameraIcon, MenuIcon, LeafIcon, TreeIcon } from '../components/Icons';
 import { theme } from '../theme/Index';
 
 interface HomeScreenProps {
-  onNavigate: (screen: 'Home' | 'Camera' | 'AddPhoto' | 'History') => void;
+  onNavigate: (screen: 'Camera' | 'AddPhoto' | 'History') => void;
+  onMenuPress: () => void;
 }
 
-function HomeScreen({ onNavigate }: HomeScreenProps) {
-  const [totalScans, setTotalScans] = useState<number>(0);
-  const [pendingSync, setPendingSync] = useState<number>(0);
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
-
-  const loadDashboardStats = async () => {
-    try {
-      const history = await getLocalHistory();
-      setTotalScans(history.length);
-      
-      const pendingCount = history.filter(r => r.sync_status === 'PENDING').length;
-      setPendingSync(pendingCount);
-    } catch (error) {
-      console.error("Dashboard: Error fetching logs", error);
-    }
-  };
-
-  useEffect(() => {
-    loadDashboardStats();
-    // Refresh stats every time screen gains focus in mock routing
-    const interval = setInterval(loadDashboardStats, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleManualSync = async () => {
-    if (isSyncing) return;
-    setIsSyncing(true);
-    try {
-      const syncedCount = await syncOfflineReports();
-      alert(syncedCount > 0 ? `Successfully uploaded ${syncedCount} records!` : "No pending records uploaded.");
-      await loadDashboardStats();
-    } catch (e) {
-      alert("Synchronization failed. Check server connectivity.");
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
+function HomeScreen({ onNavigate, onMenuPress }: HomeScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
-        {/* Header Branding */}
+        {/* Menu Button */}
+        <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
+          <MenuIcon size={28} color={theme.colors.textOnDark} />
+        </TouchableOpacity>
+
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.subtitle}>Victoria University Kampala</Text>
-          <Text style={styles.title}>Agriscan Mobile</Text>
-          <Text style={styles.tagline}>UG Crop Disease Diagnostics</Text>
+          <Text style={styles.title}>Scan the LEAF and find{'\n'}the Disease..</Text>
+          <Text style={styles.subtitle}>Reveal the Tree Behind Every Leaf{'\n'}Effortlessly!</Text>
         </View>
 
-        {/* Sync Status Banner */}
-        <View style={[styles.syncBanner, pendingSync > 0 ? styles.syncWarning : styles.syncSuccess]}>
-          <Text style={styles.syncText}>
-            {pendingSync > 0 
-              ? `${pendingSync} Diagnostics Cached Offline (Pending Sync)` 
-              : 'All Data Synchronized to PostGIS'}
+        {/* Illustration */}
+        <View style={styles.illustrationContainer}>
+          <View style={styles.illustration}>
+            {/* Leaf Icon */}
+            <View style={styles.leafIcon}>
+              <LeafIcon size={70} color={theme.colors.mint} />
+            </View>
+            
+            {/* Scanner Frame */}
+            <View style={styles.scannerFrame}>
+              <View style={styles.scannerCorner} />
+              <View style={[styles.scannerCorner, styles.scannerCornerTopRight]} />
+              <View style={[styles.scannerCorner, styles.scannerCornerBottomLeft]} />
+              <View style={[styles.scannerCorner, styles.scannerCornerBottomRight]} />
+            </View>
+
+            {/* Tree Icon */}
+            <View style={styles.treeIcon}>
+              <TreeIcon size={100} color={theme.colors.green} />
+            </View>
+          </View>
+        </View>
+
+        {/* Instructions */}
+        <View style={styles.instructionsContainer}>
+          <Text style={styles.instructionsText}>
+            Simply Tap the Scan Button Below{'\n'}and Point at the Leaf to Identify the{'\n'}affected disease
           </Text>
-          {pendingSync > 0 && (
-            <TouchableOpacity 
-              style={styles.syncButton} 
-              onPress={handleManualSync}
-              disabled={isSyncing}
-            >
-              <Text style={styles.syncButtonText}>{isSyncing ? 'Syncing...' : 'Sync Now'}</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
-        {/* Metrics Section */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{totalScans}</Text>
-            <Text style={styles.statLabel}>Total Scans</Text>
-          </View>
-          
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, styles.statNumberError]}>
-              {pendingSync}
-            </Text>
-            <Text style={styles.statLabel}>Offline Queue</Text>
-          </View>
-        </View>
-
-        {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>Field Operations</Text>
-        
+        {/* Scan Button */}
         <TouchableOpacity 
-          style={styles.actionCardPrimary} 
+          style={styles.scanButton} 
           onPress={() => onNavigate('Camera')}
         >
-          <View style={styles.actionIconPlaceholder}>
-            <Text style={styles.actionEmoji}>📸</Text>
-          </View>
-          <View style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>Diagnose Leaf Crop</Text>
-            <Text style={styles.actionDesc}>Point camera at leaf/stem to run offline ML diagnosis</Text>
+          <View style={styles.scanButtonInner}>
+            <CameraIcon size={40} color={theme.colors.darkTeal} />
           </View>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionCardSecondary}
-          onPress={() => onNavigate('AddPhoto')}
-        >
-          <View style={[styles.actionIconPlaceholder, styles.actionIconSecondary]}>
-            <GalleryAdd size={26} color={theme.colors.deepTeal} variant="Bold" />
-          </View>
-          <View style={styles.actionTextContainer}>
-            <Text style={[styles.actionTitle, styles.actionTitleSecondary]}>Add Photo</Text>
-            <Text style={styles.actionDesc}>Choose an existing leaf image and run the same model diagnosis</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionCardSecondary} 
-          onPress={() => onNavigate('History')}
-        >
-          <View style={[styles.actionIconPlaceholder, styles.actionIconSecondary]}>
-            <Text style={styles.actionEmoji}>📂</Text>
-          </View>
-          <View style={styles.actionTextContainer}>
-            <Text style={[styles.actionTitle, styles.actionTitleSecondary]}>Diagnostic Logs</Text>
-            <Text style={styles.actionDesc}>View past diagnostic history, coordinates, and recommendations</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Localized Tip Card */}
-        <View style={styles.tipCard}>
-          <Text style={styles.tipTitle}>💡 Mukene / Extension Tip</Text>
-          <Text style={styles.tipContent}>
-            Ekilwadde kya BBW kyolekebwa nnyo mu matooke. Uproot infected banana stems immediately at ground level to prevent further spread.
-          </Text>
-        </View>
 
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#2D4A3E', // Dark green background matching Figma
   },
   scrollContent: {
-    padding: theme.spacing.lg,
+    flexGrow: 1,
     alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.xl,
+    paddingBottom: theme.spacing.xl,
+  },
+  menuButton: {
+    position: 'absolute',
+    top: theme.spacing.lg,
+    left: theme.spacing.lg,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  menuIcon: {
+    // Replaced with SVG icon
   },
   header: {
     width: '100%',
-    alignItems: 'flex-start',
-    marginVertical: theme.spacing.lg,
-  },
-  subtitle: {
-    fontSize: theme.typography.caption.fontSize,
-    fontWeight: '700',
-    color: theme.colors.deepTeal,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
+    alignItems: 'center',
+    marginTop: theme.spacing.xxl,
+    marginBottom: theme.spacing.xl,
   },
   title: {
-    fontSize: theme.typography.h1.fontSize,
-    fontWeight: '800',
-    color: theme.colors.darkTeal,
-  },
-  tagline: {
-    fontSize: theme.typography.body.fontSize,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm / 2,
-  },
-  syncBanner: {
-    width: '100%',
-    borderRadius: theme.radius.input,
-    padding: theme.spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.lg,
-  },
-  syncWarning: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.warning,
-  },
-  syncSuccess: {
-    backgroundColor: theme.colors.mint,
-    borderWidth: 1,
-    borderColor: theme.colors.success,
-  },
-  syncText: {
-    fontSize: theme.typography.caption.fontSize,
-    fontWeight: '600',
-    color: theme.colors.deepTeal,
-    flex: 1,
-    paddingRight: theme.spacing.sm,
-  },
-  syncButton: {
-    backgroundColor: theme.colors.darkTeal,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radius.input / 2,
-  },
-  syncButtonText: {
-    color: theme.colors.textOnDark,
-    fontSize: theme.typography.caption.fontSize,
+    fontSize: 28,
     fontWeight: '700',
+    color: theme.colors.mint,
+    textAlign: 'center',
+    lineHeight: 36,
+    marginBottom: theme.spacing.md,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: theme.spacing.lg,
-  },
-  statCard: {
-    backgroundColor: theme.colors.surface,
-    width: '48%',
-    borderRadius: theme.radius.card,
-    padding: theme.spacing.lg,
-    alignItems: 'center',
-    shadowColor: theme.colors.darkTeal,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  statNumber: {
-    fontSize: theme.typography.h1.fontSize,
-    fontWeight: '800',
-    color: theme.colors.deepTeal,
-  },
-  statNumberError: {
-    color: theme.colors.error,
-  },
-  statLabel: {
-    fontSize: theme.typography.caption.fontSize,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm / 2,
+  subtitle: {
+    fontSize: 16,
     fontWeight: '500',
+    color: theme.colors.mint,
+    textAlign: 'center',
+    lineHeight: 24,
+    opacity: 0.9,
   },
-  sectionTitle: {
-    fontSize: theme.typography.h2.fontSize,
-    fontWeight: '700',
-    color: theme.colors.darkTeal,
+  illustrationContainer: {
     width: '100%',
-    marginBottom: theme.spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: theme.spacing.xl,
+    height: 200,
   },
-  actionCardPrimary: {
-    backgroundColor: theme.colors.deepTeal,
+  illustration: {
     width: '100%',
-    borderRadius: theme.radius.card,
-    padding: theme.spacing.lg,
+    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
-    shadowColor: theme.colors.darkTeal,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    justifyContent: 'space-around',
+    paddingHorizontal: theme.spacing.lg,
   },
-  actionCardSecondary: {
-    backgroundColor: theme.colors.surface,
-    width: '100%',
-    borderRadius: theme.radius.card,
-    padding: theme.spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-    borderWidth: 1.5,
-    borderColor: theme.colors.mint,
-    shadowColor: theme.colors.darkTeal,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  actionIconPlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.mint,
+  leafIcon: {
+    width: 80,
+    height: 80,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  actionEmoji: {
-    fontSize: theme.typography.h2.fontSize,
+  scannerFrame: {
+    width: 100,
+    height: 100,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  actionTextContainer: {
-    flex: 1,
-    marginLeft: theme.spacing.md,
+  scannerCorner: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderColor: theme.colors.mint,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    top: 0,
+    left: 0,
   },
-  actionTitle: {
-    fontSize: theme.typography.body.fontSize,
-    fontWeight: '700',
-    color: theme.colors.textOnDark,
+  scannerCornerTopRight: {
+    top: 0,
+    left: 'auto',
+    right: 0,
+    borderLeftWidth: 0,
+    borderRightWidth: 3,
   },
-  actionTitleSecondary: {
-    color: theme.colors.deepTeal,
+  scannerCornerBottomLeft: {
+    top: 'auto',
+    bottom: 0,
+    left: 0,
+    borderTopWidth: 0,
+    borderBottomWidth: 3,
   },
-  actionIconSecondary: {
-    backgroundColor: theme.colors.background,
+  scannerCornerBottomRight: {
+    top: 'auto',
+    bottom: 0,
+    left: 'auto',
+    right: 0,
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
   },
-  actionDesc: {
-    fontSize: theme.typography.caption.fontSize,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm / 2,
-    lineHeight: theme.typography.caption.lineHeight,
+  treeIcon: {
+    width: 100,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  tipCard: {
-    backgroundColor: theme.colors.surface,
+  instructionsContainer: {
     width: '100%',
-    borderRadius: theme.radius.input,
-    padding: theme.spacing.md,
-    borderLeftWidth: 5,
-    borderLeftColor: theme.colors.success,
-    marginBottom: theme.spacing.lg,
+    alignItems: 'center',
+    marginVertical: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
   },
-  tipTitle: {
-    fontSize: theme.typography.body.fontSize,
-    fontWeight: '700',
-    color: theme.colors.deepTeal,
-    marginBottom: theme.spacing.sm / 2,
+  instructionsText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.colors.mint,
+    textAlign: 'center',
+    lineHeight: 24,
+    opacity: 0.95,
   },
-  tipContent: {
-    fontSize: theme.typography.caption.fontSize,
-    color: theme.colors.textSecondary,
-    lineHeight: theme.typography.caption.lineHeight,
+  scanButton: {
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: theme.spacing.xl,
+  },
+  scanButtonInner: {
+    width: 90,
+    height: 90,
+    borderRadius: 20,
+    backgroundColor: theme.colors.green,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });
