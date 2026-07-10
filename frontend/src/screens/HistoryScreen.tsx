@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
 import { getLocalHistory, LocalReport } from '../services/db';
 import { syncOfflineReports } from '../services/sync';
 import { TargetIcon, LocationIcon, CalendarIcon, AlertIcon, FolderIcon } from '../components/Icons';
@@ -46,6 +46,16 @@ export default function HistoryScreen({ onNavigate }: HistoryScreenProps) {
     }
   };
 
+  const openInMaps = async (lat: number, lon: number) => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Error opening maps:', error);
+      alert('Unable to open maps application');
+    }
+  };
+
   const renderItem = ({ item }: { item: LocalReport }) => {
     const formattedDate = new Date(item.offline_created_at).toLocaleString('en-US', {
       month: 'short',
@@ -73,10 +83,15 @@ export default function HistoryScreen({ onNavigate }: HistoryScreenProps) {
             <TargetIcon size={16} color={theme.colors.mint} />
             <Text style={styles.detailText}>Confidence: {(item.confidence_score * 100).toFixed(1)}%</Text>
           </View>
-          <View style={styles.detailRow}>
+          <TouchableOpacity 
+            style={styles.detailRow}
+            onPress={() => openInMaps(item.latitude, item.longitude)}
+          >
             <LocationIcon size={16} color={theme.colors.mint} />
-            <Text style={styles.detailText}>GPS: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}</Text>
-          </View>
+            <Text style={[styles.detailText, styles.clickableText]}>
+              GPS: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)} 📍
+            </Text>
+          </TouchableOpacity>
           <View style={styles.detailRow}>
             <CalendarIcon size={16} color={theme.colors.mint} />
             <Text style={styles.detailText}>Scanned: {formattedDate}</Text>
@@ -246,6 +261,10 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: theme.typography.caption.fontSize,
     color: theme.colors.textSecondary,
+  },
+  clickableText: {
+    color: theme.colors.deepTeal,
+    textDecorationLine: 'underline',
   },
   severityText: {
     fontWeight: '700',
