@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraIcon, MenuIcon, LeafIcon, TreeIcon } from '../components/Icons';
 import { theme } from '../theme/Index';
 
@@ -9,12 +10,19 @@ interface HomeScreenProps {
 }
 
 function HomeScreen({ onNavigate, onMenuPress }: HomeScreenProps) {
+  const insets = useSafeAreaInsets();
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={[
+          styles.scrollContent, 
+          { paddingTop: insets.top + theme.spacing.lg }
+        ]}
+      >
         
         {/* Menu Button */}
-        <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
+        <TouchableOpacity style={[styles.menuButton, { top: insets.top + theme.spacing.md }]} onPress={onMenuPress}>
           <MenuIcon size={28} color={theme.colors.textOnDark} />
         </TouchableOpacity>
 
@@ -80,7 +88,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.xl,
     paddingBottom: theme.spacing.xl,
   },
   menuButton: {

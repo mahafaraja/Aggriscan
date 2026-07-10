@@ -46,7 +46,51 @@
             "deploymentTarget": "16.4"
           }
         }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Poppins-Regular.ttf",
+            "./assets/fonts/Poppins-Medium.ttf",
+            "./assets/fonts/Poppins-SemiBold.ttf",
+            "./assets/fonts/Poppins-Bold.ttf"
+          ]
+        }
       ]
-    ]
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.faraja-maha.agriscan",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "NSCameraUsageDescription": "Allow Agriscan to access your camera to scan crop leaves for disease detection",
+        "NSLocationWhenInUseUsageDescription": "Allow Agriscan to access your location for geospatial disease mapping",
+        "NSPhotoLibraryUsageDescription": "Allow Agriscan to access your photo library to select images for scanning"
+      },
+      "font": {
+        "family": "Poppins"
+      }
+    },
+    "android": {
+      "package": "com.faraja_maha.agriscan",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#014546"
+      }
+    }
   }
 }

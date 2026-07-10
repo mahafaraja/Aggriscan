@@ -61,74 +61,71 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
   };
 
   const sendSMSCode = async () => {
-    if (!phone || phone.length < 10) {
-      Alert.alert('Error', 'Please enter a valid phone number');
-      return;
-    }
-
     const normalizedPhone = normalizePhoneNumber(phone);
-    setPhone(normalizedPhone);
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phone_number: normalizedPhone }),
-      });
+    
+    // Auto-advance when 10 digits reached
+    if (normalizedPhone.replace(/\D/g, '').length >= 10) {
+      setPhone(normalizedPhone);
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms/send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ phone_number: normalizedPhone }),
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to send SMS code');
+        if (!response.ok) {
+          throw new Error('Failed to send SMS code');
+        }
+
+        goToVerification();
+      } catch (error) {
+        Alert.alert('Error', 'Failed to send verification code. Please try again.');
+        console.error('SMS send error:', error);
+      } finally {
+        setLoading(false);
       }
-
-      goToVerification();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to send verification code. Please try again.');
-      console.error('SMS send error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const verifySMSCode = async () => {
     const codeString = code.join('');
-    if (codeString.length !== 6) {
-      Alert.alert('Error', 'Please enter the complete 6-digit code');
-      return;
-    }
+    
+    // Auto-verify when 6 digits entered
+    if (codeString.length === 6) {
+      const normalizedPhone = normalizePhoneNumber(phone);
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms/verify`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            phone_number: normalizedPhone,
+            code: codeString,
+          }),
+        });
 
-    const normalizedPhone = normalizePhoneNumber(phone);
-    setPhone(normalizedPhone);
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone_number: normalizedPhone,
-          code: codeString,
-        }),
-      });
+        if (!response.ok) {
+          throw new Error('Invalid verification code');
+        }
 
-      if (!response.ok) {
-        throw new Error('Invalid verification code');
+        const data = await response.json();
+        
+        // Store the token
+        await SecureStore.setItemAsync('auth_token', data.access_token);
+        await SecureStore.setItemAsync('user_phone', normalizedPhone);
+        
+        goToSuccess();
+      } catch (error) {
+        Alert.alert('Error', 'Invalid verification code. Please try again.');
+        console.error('SMS verify error:', error);
+      } finally {
+        setLoading(false);
       }
-
-      const data = await response.json();
-      
-      // Store the token
-      await SecureStore.setItemAsync('auth_token', data.access_token);
-      await SecureStore.setItemAsync('user_phone', normalizedPhone);
-      
-      goToSuccess();
-    } catch (error) {
-      Alert.alert('Error', 'Invalid verification code. Please try again.');
-      console.error('SMS verify error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
