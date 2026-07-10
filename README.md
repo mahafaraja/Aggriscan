@@ -527,32 +527,99 @@ The model can detect 8 crop types:
 
 ### Disease Mapping
 
-Each crop has specific disease mappings:
-- **Banana**: Banana_BBW (Banana Bunchy Top Disease)
-- **Bean**: Bean_Angular_Leaf_Spot
-- **Cassava**: Cassava_CMD (Cassava Mosaic Disease)
-- **Coffee**: Coffee_Leaf_Rust
-- **Corn**: Corn_Northern_Leaf_Blight
-- **Groundnuts**: Groundnut_Rosette
-- **Potato**: Potato_Late_Blight
-- **Tomato**: Tomato_Early_Blight
+Each crop has specific disease mappings (16 total disease classes):
+- **Banana**: BBW (Bacterial Wilt), Black Sigatoka, Healthy
+- **Bean**: Angular Leaf Spot, Rust, Healthy
+- **Cassava**: Bacterial Blight, Brown Spot, CMD (Mosaic), Green Mottle, Healthy
+- **Coffee**: Rust, Healthy
+- **Corn**: Common Rust, Gray Leaf Spot, Northern Leaf Blight, Healthy
+- **Groundnuts**: Early Leaf Spot, Late Leaf Spot, Healthy
+- **Potato**: Early Blight, Late Blight, Healthy
+- **Tomato**: Bacterial Spot, Early Blight, Late Blight, Leaf Mold, Septoria Leaf Spot, Spider Mites, Target Spot, Yellow Leaf Curl Virus, Mosaic Virus, Healthy
+
+### Model Training
+
+**Current Status**: The model needs to be trained with real crop images for accurate detection.
+
+**Training Options**:
+
+#### Option 1: Train on Kaggle (Recommended - Free GPU)
+See **[KAGGLE_TRAINING_GUIDE.md](KAGGLE_TRAINING_GUIDE.md)** for step-by-step instructions.
+
+**Benefits**:
+- Free GPU (Tesla P100/P4)
+- No local GPU required
+- PlantVillage dataset pre-loaded
+- Training time: 30-60 minutes
+- Cost: $0
+
+**Steps**:
+1. Create Kaggle account
+2. Create new notebook with GPU enabled
+3. Add PlantVillage dataset
+4. Run training code
+5. Download trained model (~14 MB)
+6. Deploy to `backend/app/model_assets/pretrained/`
+
+#### Option 2: Train Locally
+See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed instructions.
+
+**Requirements**:
+- GPU recommended (30-60 min training)
+- 2.3 GB dataset download
+- TensorFlow 2.10+
+
+#### Option 3: Use Pre-trained Model
+If you have a pre-trained TFLite model:
+```bash
+mkdir -p backend/app/model_assets/pretrained
+cp /path/to/your/model.tflite backend/app/model_assets/pretrained/plant_village_model.tflite
+cp /path/to/your/class_map.json backend/app/model_assets/pretrained/class_map.json
+```
 
 ### Model Location
-- Backend: `backend/app/model_assets/agriscan_model.tflite`
-- Class Map: `backend/app/model_assets/class_map.json`
+- **Current (low accuracy)**: `backend/app/model_assets/agriscan_model.tflite`
+- **Pretrained (high accuracy)**: `backend/app/model_assets/pretrained/plant_village_model.tflite`
+- **Class Map**: `backend/app/model_assets/class_map.json`
+
+### Expected Performance
+
+| Model | Training Data | Accuracy | Size |
+|-------|--------------|----------|------|
+| Current (agriscan_model.tflite) | Synthetic (random noise) | ~10% | ~50 MB |
+| Pretrained (MobileNetV2) | Real crop images (38K+) | 95-97% | ~14 MB |
 
 ### Inference Process
 
 1. Image is resized to 224x224 pixels
 2. Preprocessed and fed to TFLite model
-3. Model returns probability distribution over 8 classes
+3. Model returns probability distribution over classes
 4. Highest probability class is selected
-5. Health analysis based on green color ratio
-6. Disease label and severity are determined
+5. Disease label and severity are determined
 
 ### Local vs Backend Inference
 
 The frontend supports both local TFLite inference (offline) and backend API inference (online). Local inference uses the same model architecture for offline capability.
+
+### Testing the Model
+
+After training and deploying the model:
+```bash
+cd backend
+python test_inference.py
+```
+
+Expected output with pretrained model:
+```json
+{
+  "crop_type": "Cassava",
+  "disease_label": "Cassava_CMD",
+  "confidence_score": 0.95,
+  "severity": "High",
+  "detected_raw_crop": "Cassava_CMD",
+  "model_used": "pretrained (MobileNetV2 transfer learning)"
+}
+```
 
 ## Screen Flow
 
@@ -602,6 +669,13 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:8000
 **ML inference errors:**
 - Verify model files exist in `backend/app/model_assets/`
 - Check TensorFlow installation: `pip show tensorflow`
+- If using pretrained model, ensure it's in `backend/app/model_assets/pretrained/`
+- Run `python test_inference.py` to diagnose issues
+
+**Low model accuracy (~10%):**
+- The current model was trained on synthetic data
+- Train a new model using Kaggle (see KAGGLE_TRAINING_GUIDE.md)
+- Or use a pre-trained model (see SETUP_GUIDE.md)
 
 ### Frontend Issues
 
