@@ -28,7 +28,6 @@ export function AuthBackground({ children, style, ...props }: AuthBackgroundProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    overflow: 'hidden',
     backgroundColor: theme.colors.deepTeal,
   },
 });

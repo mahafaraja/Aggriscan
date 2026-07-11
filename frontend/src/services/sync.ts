@@ -97,8 +97,8 @@ async function syncReportToBackend(report: any, token: string): Promise<boolean>
  */
 async function getAuthToken(): Promise<string | null> {
   try {
-    const { expoSecureStore } = await import('expo-secure-store');
-    return await expoSecureStore.getItemAsync('auth_token');
+    const SecureStore = await import('expo-secure-store');
+    return await SecureStore.default.getItemAsync('auth_token');
   } catch (error) {
     console.error('Sync: Error getting auth token:', error);
     return null;
@@ -131,3 +131,6 @@ export async function manualSync(): Promise<{ synced: number; failed: number }> 
   console.log('Sync: Manual sync triggered');
   return await syncPendingReports();
 }
+
+// Alias for backward compatibility
+export const syncOfflineReports = syncPendingReports;

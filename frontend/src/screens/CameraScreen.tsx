@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Image, Saf
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { processScanImage } from '../services/scanProcessor';
+import { LocationIcon } from '../components/Icons';
 import { theme } from '../theme/Index';
 import { ScanPayload } from '../types/scan';
 
@@ -166,8 +167,9 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
       {!capturedImage && (
         <View style={styles.controlBar}>
           <View style={styles.gpsIndicator}>
+            <LocationIcon size={16} color={theme.colors.mint} />
             <Text style={styles.gpsText}>
-              📍 GPS Accuracy: {gpsCoords ? 'Locked (WGS84)' : 'Searching...'}
+              GPS Accuracy: {gpsCoords ? 'Locked (WGS84)' : 'Searching...'}
             </Text>
           </View>
           
@@ -370,6 +372,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gpsIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm / 2,
     marginBottom: theme.spacing.md,
   },
   gpsText: {

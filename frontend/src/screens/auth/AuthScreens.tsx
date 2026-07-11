@@ -128,6 +128,13 @@ export function VerificationAuthScreen({
 }: VerificationScreenProps) {
   const styles = size === 'preview' ? previewStyles : fullStyles;
 
+  const handleCodeComplete = (fullCode: string) => {
+    // Auto-verify when 6 digits are entered
+    if (onVerify) {
+      onVerify();
+    }
+  };
+
   return (
     <AuthScreenLayout size={size} showBack onBack={onBack}>
       <BrandLogo style={styles.logo} />
@@ -136,7 +143,11 @@ export function VerificationAuthScreen({
         <Text style={styles.mutedCopy}>We sent a reset link to {maskedPhone}</Text>
         <Text style={styles.helper}>enter 6 digit code that mentioned in SMS</Text>
         <View style={styles.codeSpacer}>
-          <CodeInputRow values={code} onChangeValue={onCodeChange} />
+          <CodeInputRow 
+            values={code} 
+            onChangeValue={onCodeChange} 
+            onComplete={handleCodeComplete}
+          />
         </View>
         <AuthButton
           label="verify"

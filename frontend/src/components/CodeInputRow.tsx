@@ -6,9 +6,10 @@ type CodeInputRowProps = {
   length?: number;
   values?: string[];
   onChangeValue?: (value: string, index: number) => void;
+  onComplete?: (code: string) => void;
 };
 
-export function CodeInputRow({ length = 6, values = [], onChangeValue }: CodeInputRowProps) {
+export function CodeInputRow({ length = 6, values = [], onChangeValue, onComplete }: CodeInputRowProps) {
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
   const handleChange = (value: string, index: number) => {
@@ -17,6 +18,14 @@ export function CodeInputRow({ length = 6, values = [], onChangeValue }: CodeInp
 
     if (normalized && index < length - 1) {
       inputRefs.current[index + 1]?.focus();
+    }
+    
+    // Check if all digits are filled
+    const newValues = [...values];
+    newValues[index] = normalized;
+    const fullCode = newValues.join('');
+    if (fullCode.length === length && onComplete) {
+      onComplete(fullCode);
     }
   };
 

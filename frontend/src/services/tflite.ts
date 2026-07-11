@@ -1,7 +1,7 @@
 import { API_BASE_URL } from '../config/api';
 
 export interface DiagnosticsResult {
-  crop_type?: 'Cassava' | 'Banana';
+  crop_type?: 'Banana' | 'Bean' | 'Cassava' | 'Coffee' | 'Corn' | 'Groundnuts' | 'Potato' | 'Tomato';
   disease_label: string;
   confidence_score: number;
   severity: 'Low' | 'Medium' | 'High';

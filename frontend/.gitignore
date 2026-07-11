@@ -12,6 +12,8 @@ typings
 .env
 .env.local
 .env.*
+.eas.env
+.
 
 .DS_Store
 

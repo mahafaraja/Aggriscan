@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
 import { getLocalHistory, LocalReport } from '../services/db';
 import { syncOfflineReports } from '../services/sync';
+import { TargetIcon, LocationIcon, CalendarIcon, AlertIcon, FolderIcon } from '../components/Icons';
 import { theme } from '../theme/Index';
 
 interface HistoryScreenProps {
@@ -31,9 +32,9 @@ export default function HistoryScreen({ onNavigate }: HistoryScreenProps) {
   const triggerSync = async () => {
     setIsSyncing(true);
     try {
-      const count = await syncOfflineReports();
-      if (count > 0) {
-        alert(`Successfully synchronized ${count} reports.`);
+      const result = await syncOfflineReports();
+      if (result.synced > 0) {
+        alert(`Successfully synchronized ${result.synced} reports.`);
         await fetchLogs();
       } else {
         alert("No unsynced reports found or server is unreachable.");
@@ -42,6 +43,16 @@ export default function HistoryScreen({ onNavigate }: HistoryScreenProps) {
       alert("Sync error. Check server logs.");
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const openInMaps = async (lat: number, lon: number) => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Error opening maps:', error);
+      alert('Unable to open maps application');
     }
   };
 
@@ -68,12 +79,29 @@ export default function HistoryScreen({ onNavigate }: HistoryScreenProps) {
         </View>
 
         <View style={styles.cardDetails}>
-          <Text style={styles.detailText}>🎯 Confidence: {(item.confidence_score * 100).toFixed(1)}%</Text>
-          <Text style={styles.detailText}>📍 GPS: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}</Text>
-          <Text style={styles.detailText}>📅 Scanned: {formattedDate}</Text>
-          <Text style={[styles.detailText, styles.severityText, item.severity === 'High' ? styles.highSeverityText : styles.lowSeverityText]}>
-            ⚠️ Severity: {item.severity}
-          </Text>
+          <View style={styles.detailRow}>
+            <TargetIcon size={16} color={theme.colors.mint} />
+            <Text style={styles.detailText}>Confidence: {(item.confidence_score * 100).toFixed(1)}%</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.detailRow}
+            onPress={() => openInMaps(item.latitude, item.longitude)}
+          >
+            <LocationIcon size={16} color={theme.colors.mint} />
+            <Text style={[styles.detailText, styles.clickableText]}>
+              GPS: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)} 📍
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.detailRow}>
+            <CalendarIcon size={16} color={theme.colors.mint} />
+            <Text style={styles.detailText}>Scanned: {formattedDate}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <AlertIcon size={16} color={item.severity === 'High' ? theme.colors.error : theme.colors.success} />
+            <Text style={[styles.detailText, styles.severityText, item.severity === 'High' ? styles.highSeverityText : styles.lowSeverityText]}>
+              Severity: {item.severity}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -100,7 +128,7 @@ export default function HistoryScreen({ onNavigate }: HistoryScreenProps) {
         </View>
       ) : reports.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyEmoji}>📂</Text>
+          <FolderIcon size={60} color={theme.colors.mint} />
           <Text style={styles.emptyTitle}>No scans recorded yet</Text>
           <Text style={styles.emptySub}>Diagnostic logs will appear here after scanning crops in the field.</Text>
           <TouchableOpacity style={styles.scanNowBtn} onPress={() => onNavigate('Camera')}>
@@ -225,9 +253,18 @@ const styles = StyleSheet.create({
   cardDetails: {
     gap: theme.spacing.sm / 2,
   },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm / 2,
+  },
   detailText: {
     fontSize: theme.typography.caption.fontSize,
     color: theme.colors.textSecondary,
+  },
+  clickableText: {
+    color: theme.colors.deepTeal,
+    textDecorationLine: 'underline',
   },
   severityText: {
     fontWeight: '700',
@@ -239,8 +276,7 @@ const styles = StyleSheet.create({
     color: theme.colors.deepTeal,
   },
   emptyEmoji: {
-    fontSize: theme.typography.h1.fontSize * 2,
-    marginBottom: theme.spacing.md,
+    // Replaced with SVG icon
   },
   emptyTitle: {
     fontSize: theme.typography.h2.fontSize,
