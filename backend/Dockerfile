@@ -17,8 +17,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create temp uploads directory
-RUN mkdir -p temp_uploads
+# Create temp uploads and reports directories
+RUN mkdir -p temp_uploads reports
 
 # Expose port
 EXPOSE 8000

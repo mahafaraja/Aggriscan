@@ -4,9 +4,16 @@ from typing import List
 import os
 import shutil
 import uuid
+from datetime import datetime
 from ..database import get_db
 from .. import schemas, crud, auth, models
 from ..services.inference import get_inference_service
+from ..services.plant_identification import (
+    get_image_validation_service,
+    get_plant_identification_service,
+    get_care_recommendation_service,
+    get_pdf_report_generator
+)
 
 router = APIRouter(prefix="/api/v1/reports", tags=["Reports & Geospatial Mapping"])
 
@@ -47,6 +54,114 @@ def diagnose_crop_image(file: UploadFile = File(...)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Inference engine failure: {str(e)}"
+        )
+    finally:
+        # Clean up temp file
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+
+
+@router.post("/analyze-plant")
+def analyze_plant_image(file: UploadFile = File(...)):
+    """
+    Green-Sense Multi-Service Plant Analysis Pipeline
+    1. Image Validation - Checks if image contains a plant
+    2. Plant Identification - Identifies plant species with fallback services
+    3. Care Recommendations - Generates care and treatment guides
+    4. PDF Report - Creates professional report
+    
+    This endpoint is public and uses the Green-Sense architecture.
+    """
+    # Verify file is an image
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File uploaded is not a valid image."
+        )
+    
+    # Create temp directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    temp_dir = os.path.join(os.path.dirname(current_dir), "temp_uploads")
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    # Generate unique temp filename
+    temp_file_path = os.path.join(temp_dir, f"temp_{uuid.uuid4().hex}_{file.filename}")
+    
+    try:
+        # Save file locally
+        with open(temp_file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        analysis_result = {
+            "timestamp": datetime.now().isoformat(),
+            "image_validated": False,
+            "plant_identified": False,
+            "care_recommendations_generated": False,
+            "pdf_report_generated": False
+        }
+        
+        # Step 1: Image Validation
+        print("Step 1: Validating image...")
+        validation_service = get_image_validation_service()
+        validation_result = validation_service.validate_plant_image(temp_file_path)
+        analysis_result["image_validation"] = validation_result
+        analysis_result["image_validated"] = validation_result.get("is_plant", False)
+        
+        if not validation_result.get("is_plant", False):
+            analysis_result["error"] = "Image does not appear to contain a plant"
+            analysis_result["suggestion"] = "Please upload a clear image of a plant leaf, flower, or stem"
+            return analysis_result
+        
+        # Step 2: Plant Identification with Fallback
+        print("Step 2: Identifying plant...")
+        identification_service = get_plant_identification_service()
+        identification_result = identification_service.identify_plant(temp_file_path)
+        analysis_result["plant_identification"] = identification_result
+        analysis_result["plant_identified"] = identification_result.get("success", False)
+        
+        if not identification_result.get("success"):
+            analysis_result["error"] = "Could not identify plant species"
+            analysis_result["details"] = identification_result.get("error", "Unknown error")
+            return analysis_result
+        
+        # Step 3: Care Recommendations
+        print("Step 3: Generating care recommendations...")
+        care_service = get_care_recommendation_service()
+        plant_data = identification_result.get("plant_data", {})
+        
+        # Generate care guide
+        care_result = care_service.generate_care_guide(plant_data)
+        analysis_result["care_recommendations"] = care_result
+        analysis_result["care_recommendations_generated"] = care_result.get("success", False)
+        
+        # Generate treatment plan if disease is detected
+        treatment_result = {"success": False, "note": "No disease detected or treatment not applicable"}
+        
+        # Step 4: PDF Report Generation
+        print("Step 4: Generating PDF report...")
+        pdf_service = get_pdf_report_generator()
+        report_result = pdf_service.generate_report(analysis_result)
+        analysis_result["pdf_report"] = report_result
+        analysis_result["pdf_report_generated"] = report_result.get("success", False)
+        
+        # Add summary for frontend
+        analysis_result["summary"] = {
+            "plant_name": plant_data.get("plant_name", "Unknown"),
+            "scientific_name": plant_data.get("scientific_name", "Unknown"),
+            "confidence": plant_data.get("confidence", 0.0),
+            "service_used": identification_result.get("service_used", "unknown"),
+            "fallback_used": identification_result.get("fallback_used", False),
+            "care_guide_available": care_result.get("success", False),
+            "report_available": report_result.get("success", False)
+        }
+        
+        return analysis_result
+        
+    except Exception as e:
+        print(f"Error in plant analysis pipeline: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Analysis pipeline failure: {str(e)}"
         )
     finally:
         # Clean up temp file

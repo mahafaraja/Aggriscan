@@ -1,8 +1,8 @@
 import React from 'react';
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ArrowLeft2, Health, Scan, ShieldSearch } from 'iconsax-react-native';
+import { ArrowLeft2, Health, Scan, ShieldSearch, DocumentText } from 'iconsax-react-native';
 import { theme } from '../theme/Index';
-import { ScanPayload } from '../types/scan';
+import { ScanPayload, PlantAnalysisResponse } from '../types/scan';
 
 interface ScanResultScreenProps {
   scan: ScanPayload;
@@ -20,6 +20,14 @@ export default function ScanResultScreen({
   const confidence = `${(scan.diagnostic.confidence_score * 100).toFixed(1)}%`;
   const diseaseName = scan.diagnostic.disease_label.replace(/_/g, ' ');
   const isHealthy = scan.diagnostic.disease_label.toLowerCase().includes('healthy');
+  
+  // Check if this is a Green-Sense analysis
+  const plantAnalysis = scan.diagnostic.plant_analysis as PlantAnalysisResponse | undefined;
+  const isGreenSense = plantAnalysis && plantAnalysis.image_validated && plantAnalysis.plant_identified;
+  
+  // Get service info if Green-Sense was used
+  const serviceUsed = isGreenSense ? plantAnalysis.summary.service_used : 'TFLite Model';
+  const fallbackUsed = isGreenSense ? plantAnalysis.summary.fallback_used : false;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -39,7 +47,7 @@ export default function ScanResultScreen({
               variant="Bold"
             />
             <Text style={styles.statusText}>
-              {isHealthy ? 'Healthy leaf detected' : 'Model identified the disease'}
+              {isHealthy ? 'Healthy leaf detected' : 'Disease identified'}
             </Text>
           </View>
 
@@ -67,7 +75,30 @@ export default function ScanResultScreen({
             </View>
           </View>
 
-          {scan.diagnostic.detected_raw_crop && (
+          {/* Green-Sense Analysis Info */}
+          {isGreenSense && (
+            <View style={[styles.greenSenseInfo, { backgroundColor: '#E8F5E9' }]}>
+              <Text style={styles.greenSenseTitle}>🌱 Green-Sense Analysis</Text>
+              <View style={styles.serviceRow}>
+                <Text style={styles.serviceLabel}>Service Used:</Text>
+                <Text style={styles.serviceValue}>
+                  {serviceUsed} {fallbackUsed && '(Fallback)'}
+                </Text>
+              </View>
+              {plantAnalysis.care_recommendations_generated && (
+                <View style={styles.availableRow}>
+                  <Text style={styles.availableText}>✓ Care guide available</Text>
+                </View>
+              )}
+              {plantAnalysis.pdf_report_generated && (
+                <View style={styles.availableRow}>
+                  <Text style={styles.availableText}>✓ PDF report generated</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {scan.diagnostic.detected_raw_crop && !isGreenSense && (
             <Text style={styles.modelDetail}>
               Raw model crop: {scan.diagnostic.detected_raw_crop}
             </Text>
@@ -81,6 +112,20 @@ export default function ScanResultScreen({
             <ShieldSearch size={16} color={theme.colors.darkTeal} variant="Bold" />
             <Text style={styles.primaryButtonText}>Treatment & Prevention</Text>
           </Pressable>
+
+          {isGreenSense && plantAnalysis.care_recommendations_generated && (
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.reportButton, pressed && styles.pressed]}
+              onPress={() => {
+                // View PDF report - in a real app, this would open the PDF
+                alert('PDF Report: ' + (plantAnalysis.pdf_report.report_filename || 'Report generated'));
+              }}
+            >
+              <DocumentText size={16} color={theme.colors.darkTeal} variant="Bold" />
+              <Text style={styles.reportButtonText}>View PDF Report</Text>
+            </Pressable>
+          )}
 
           <Pressable
             accessibilityRole="button"
@@ -184,6 +229,60 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: theme.typography.caption.fontSize,
     marginBottom: theme.spacing.md,
+  },
+  greenSenseInfo: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.green || '#4CAF50',
+  },
+  greenSenseTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: theme.colors.darkTeal,
+    marginBottom: theme.spacing.sm,
+  },
+  serviceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  serviceLabel: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
+  },
+  serviceValue: {
+    fontSize: 12,
+    color: theme.colors.darkTeal,
+    fontWeight: '700',
+  },
+  availableRow: {
+    marginTop: 4,
+  },
+  availableText: {
+    fontSize: 11,
+    color: theme.colors.green || '#2E7D32',
+    fontWeight: '600',
+  },
+  reportButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    backgroundColor: '#E8F5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.green || '#4CAF50',
+  },
+  reportButtonText: {
+    color: theme.colors.darkTeal,
+    fontSize: theme.typography.caption.fontSize,
+    fontWeight: '800',
   },
   primaryButton: {
     minHeight: 42,
