@@ -1,5 +1,5 @@
 import React from 'react';
-import { Svg, Path, G, Circle, Line, Polyline } from 'react-native-svg';
+import { Svg, Path, G, Circle, Line, Polyline, Rect } from 'react-native-svg';
 
 // Leaf Icon
 export const LeafIcon = ({ size = 40, color = '#B2ECC2' }: { size?: number; color?: string }) => (
