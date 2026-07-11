@@ -47,6 +47,9 @@ build/
 local.properties
 *.iml
 
+# Keep local Expo native build output out of source control
+android/
+
 # node.js
 #
 node_modules/
