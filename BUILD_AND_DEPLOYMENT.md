@@ -23,7 +23,7 @@ pip install -r requirements.txt
 2. **Verify Environment Variables**
 Ensure `backend/.env` contains:
 ```env
-GEMINI_API_KEY=AQ.Ab8RN6J3eD4a5OkwpIfMuxPTpHNPbEZv_wgvxTmuPZB-nwQTeQ
+GEMINI_API_KEY=REPLACE_WITH_YOUR_GEMINI_API_KEY
 DATABASE_URL=postgresql://postgres@127.0.0.1:5001/agriscan
 SECRET_KEY=super-secret-key-for-agriscan-vectoria-university-it-project-2026
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
@@ -298,4 +298,8 @@ npx tsc --noEmit
 
 **Good luck with the demo! 🚀**
 
+<<<<<<< HEAD
 The Green-Sense integration is complete and ready for demonstration.
+=======
+The Green-Sense integration is complete and ready for demonstration.
+>>>>>>> 7f11919b432cc9b15b93373ca7bc8b90a3074652

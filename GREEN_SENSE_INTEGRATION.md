@@ -126,7 +126,7 @@ Enhanced to display Green-Sense analysis information:
 
 ```env
 # Required - For plant identification and image validation
-GEMINI_API_KEY=AQ.Ab8RN6J3eD4a5OkwpIfMuxPTpHNPbEZv_wgvxTmuPZB-nwQTeQ
+GEMINI_API_KEY=REPLACE_WITH_YOUR_GEMINI_API_KEY
 
 # Optional - For enhanced plant identification
 PLANTID_API_KEY=your_plantid_api_key_here
@@ -292,4 +292,8 @@ For the demo next week:
 3. Add user accounts to save analysis history
 4. Implement PDF download/sharing functionality
 5. Add batch processing for multiple images
+<<<<<<< HEAD
 6. Integrate with disease database for more specific treatment plans
+=======
+6. Integrate with disease database for more specific treatment plans
+>>>>>>> 7f11919b432cc9b15b93373ca7bc8b90a3074652
