@@ -57,7 +57,8 @@
             "./assets/fonts/Poppins-Bold.ttf"
           ]
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "assetBundlePatterns": [
       "assets/**/*.png",
