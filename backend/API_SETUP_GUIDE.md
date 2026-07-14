@@ -117,7 +117,7 @@ GEMINI_API_KEY=invalid_key
 
 ### Development (.env)
 ```env
-GEMINI_API_KEY=AQ.Ab8RN6J3eD4a5OkwpIfMuxPTpHNPbEZv_wgvxTmuPZB-nwQTeQ
+GEMINI_API_KEY=your_gemini_api_key_here
 PLANTID_API_KEY=your_plantid_api_key_here
 PLANTNET_API_KEY=your_plantnet_api_key_here
 ```

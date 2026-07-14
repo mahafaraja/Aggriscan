@@ -22,8 +22,8 @@ Go to https://dashboard.render.com → agriscan-backend → Environment
 
 **Add/Update these variables:**
 ```
-SECRET_KEY=agriscan-2026-vectoria-university-bcs-project-jwt-secret-key-xyz789
-GEMINI_API_KEY=AQ.Ab8RN6J3eD4a5OkwpIfMuxPTpHNPbEZv_wgvxTmuPZB-nwQTeQ
+SECRET_KEY=your_secret_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 SMS_PROVIDER=mock
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 ```
