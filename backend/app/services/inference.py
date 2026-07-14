@@ -17,7 +17,7 @@ class CropInferenceService:
         # Disease expert models mapping
         self.disease_expert_models = {
             "coffee": os.path.join(self.model_dir, "coffe_model", "coffee_model.tflite"),
-            "maize": os.path.join(self.model_dir, "maize_model", "maize_model.tflite"),
+            "maize": os.path.join(self.model_dir, "maize_disease_expert.tflite"),  # Using disease expert instead of general model
             "banana": os.path.join(self.model_dir, "banana_disease_expert.tflite"),
             "bean": os.path.join(self.model_dir, "bean_disease_expert.tflite"),
             "cassava": os.path.join(self.model_dir, "cassava_disease_expert.tflite"),
@@ -199,7 +199,13 @@ class CropInferenceService:
             if crop_type == "coffee":
                 class_map_path = os.path.join(self.model_dir, "coffe_model", "class_map.json")
             elif crop_type == "maize":
-                class_map_path = os.path.join(self.model_dir, "maize_model", "class_map.json")
+                # Try maize_disease_expert first, fallback to maize_model
+                maize_expert_map = os.path.join(self.model_dir, "maize_disease_expert.tflite")
+                if os.path.exists(maize_expert_map):
+                    # maize_disease_expert uses same class map as maize_model
+                    class_map_path = os.path.join(self.model_dir, "maize_model", "class_map.json")
+                else:
+                    class_map_path = os.path.join(self.model_dir, "maize_model", "class_map.json")
             
             if not class_map_path or not os.path.exists(class_map_path):
                 return None
