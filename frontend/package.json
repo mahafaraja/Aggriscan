@@ -9,14 +9,17 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "expo": "~56.0.15",
+    "@expo/config-plugins": "^57.0.3",
+    "expo": "^46.0.21",
     "expo-build-properties": "~56.0.22",
     "expo-camera": "~56.0.8",
+    "expo-firebase-recaptcha": "^1.4.4",
     "expo-image-picker": "~56.0.20",
     "expo-location": "~56.0.20",
     "expo-secure-store": "~56.0.4",
     "expo-sqlite": "~56.0.5",
     "expo-status-bar": "~56.0.4",
+    "firebase": "^12.16.0",
     "iconsax-react-native": "^0.0.8",
     "react": "^19.2.3",
     "react-native": "0.85.3",

@@ -168,6 +168,7 @@ function App() {
         {screen === 'Settings' && (
           <SettingsScreen 
             onBack={() => setScreen('Home')} 
+            onLogout={handleLogout}
           />
         )}
         {screen === 'AccountInfo' && (

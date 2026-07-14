@@ -4,9 +4,10 @@ import { theme } from '../theme/Index';
 
 interface SettingsScreenProps {
   onBack: () => void;
+  onLogout?: () => void;
 }
 
-function SettingsScreen({ onBack }: SettingsScreenProps) {
+function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
   const [notifications, setNotifications] = React.useState(true);
   const [autoSync, setAutoSync] = React.useState(true);
   const [darkMode, setDarkMode] = React.useState(false);
@@ -113,7 +114,7 @@ function SettingsScreen({ onBack }: SettingsScreenProps) {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
 

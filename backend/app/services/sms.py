@@ -3,6 +3,7 @@ import logging
 import re
 from typing import Optional
 from ..config import settings
+from .firebase_sms import get_firebase_sms_service
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ class SMSService:
         logger.info(f"Generated verification code for {phone_number} ({normalized_phone}): {code}")
         return code
     
-    def send_verification_code(self, phone_number: str, message: str) -> bool:
+    def send_verification_code(self, phone_number: str, message: str, recaptcha_token: Optional[str] = None) -> bool:
         """Send SMS verification code based on configured provider"""
         code = self.generate_verification_code(phone_number)
         
@@ -64,6 +65,11 @@ class SMSService:
         
         elif self.provider == "twilio":
             return self._send_twilio(phone_number, f"{message} {code}")
+
+        elif self.provider == "firebase":
+            # Use Firebase Admin to record user and attempt minimal verification flow
+            firebase_service = get_firebase_sms_service()
+            return firebase_service.send_verification_code(phone_number, f"{message} {code}", recaptcha_token=recaptcha_token)
         
         else:
             logger.error(f"Unknown SMS provider: {self.provider}")

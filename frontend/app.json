@@ -34,20 +34,6 @@
     },
     "plugins": [
       [
-        "expo-build-properties",
-        {
-          "android": {
-            "usesCleartextTraffic": true,
-            "minSdkVersion": 24,
-            "targetSdkVersion": 36,
-            "compileSdkVersion": 36
-          },
-          "ios": {
-            "deploymentTarget": "16.4"
-          }
-        }
-      ],
-      [
         "expo-font",
         {
           "fonts": [

@@ -8,6 +8,14 @@
     "baseUrl": ".",
     "paths": {
       "*": ["*", "src/*"]
-    }
-  }
+    },
+    "types": ["react-native", "expo"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "src/types/**/*.ts"
+  ]
 }

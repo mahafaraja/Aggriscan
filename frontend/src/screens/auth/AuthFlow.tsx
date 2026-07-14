@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet, Alert, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   PhoneAuthScreen,
@@ -11,6 +11,10 @@ import { maskPhone } from './maskPhone';
 import { AuthStep } from './types';
 import { API_BASE_URL } from '../../config/api';
 import * as SecureStore from 'expo-secure-store';
+import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
+import firebaseConfig from '../../config/firebase';
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth, signInWithPhoneNumber } from 'firebase/auth';
 
 interface AuthFlowProps {
   onAuthSuccess: () => void;
@@ -36,6 +40,18 @@ const normalizePhoneNumber = (value: string) => {
 };
 
 export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
+  const recaptchaVerifier = useRef<any>(null);
+  const confirmationResultRef = useRef<any>(null);
+
+  // Initialize firebase app/auth when possible
+  if (typeof window !== 'undefined' && !getApps().length) {
+    try {
+      initializeApp(firebaseConfig);
+    } catch (e) {
+      // ignore init errors if already initialized
+    }
+  }
+  const firebaseAuth = getAuth();
   const [step, setStep] = useState<AuthStep>('welcome');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState<string[]>(Array(6).fill(''));
@@ -68,19 +84,15 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
       setPhone(normalizedPhone);
       setLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms/send`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ phone_number: normalizedPhone }),
-        });
-
-        if (!response.ok) {
+        // Use Firebase client SDK to send SMS (handles reCAPTCHA via the verifier modal)
+        try {
+          const confirmation = await signInWithPhoneNumber(firebaseAuth, normalizedPhone, recaptchaVerifier.current);
+          confirmationResultRef.current = confirmation;
+          goToVerification();
+        } catch (err) {
+          console.error('Firebase send SMS error:', err);
           throw new Error('Failed to send SMS code');
         }
-
-        goToVerification();
       } catch (error) {
         Alert.alert('Error', 'Failed to send verification code. Please try again.');
         console.error('SMS send error:', error);
@@ -95,30 +107,27 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
     
     // Auto-verify when 6 digits entered
     if (codeString.length === 6) {
-      const normalizedPhone = normalizePhoneNumber(phone);
       setLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms/verify`, {
+        if (!confirmationResultRef.current) throw new Error('No confirmation result available');
+        const userCredential = await confirmationResultRef.current.confirm(codeString);
+        const idToken = await userCredential.user.getIdToken();
+
+        // Exchange Firebase ID token for backend JWT
+        const resp = await fetch(`${API_BASE_URL}/api/v1/auth/firebase/verify`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            phone_number: normalizedPhone,
-            code: codeString,
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: idToken }),
         });
 
-        if (!response.ok) {
-          throw new Error('Invalid verification code');
+        if (!resp.ok) {
+          throw new Error('Backend verification failed');
         }
 
-        const data = await response.json();
-        
-        // Store the token
+        const data = await resp.json();
         await SecureStore.setItemAsync('auth_token', data.access_token);
-        await SecureStore.setItemAsync('user_phone', normalizedPhone);
-        
+        await SecureStore.setItemAsync('user_phone', userCredential.user.phoneNumber || normalizePhoneNumber(phone));
+
         goToSuccess();
       } catch (error) {
         Alert.alert('Error', 'Invalid verification code. Please try again.');
@@ -139,6 +148,11 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        {/* Invisible reCAPTCHA modal (expo-firebase-recaptcha) */}
+        <FirebaseRecaptchaVerifierModal
+          ref={recaptchaVerifier}
+          firebaseConfig={firebaseConfig}
+        />
         {step === 'welcome' && <WelcomeAuthScreen size="full" onSignUp={goToPhone} />}
 
         {step === 'phone' && (

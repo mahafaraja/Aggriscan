@@ -15,6 +15,7 @@ from typing import Dict, Any, Optional, List
 from PIL import Image
 import io
 from datetime import datetime
+from .inference import get_inference_service
 
 
 class ImageValidationService:
@@ -22,7 +23,8 @@ class ImageValidationService:
     
     def __init__(self, gemini_api_key: str):
         self.gemini_api_key = gemini_api_key
-        self.gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}"
+        self.gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}" if gemini_api_key else None
+        self.enabled = bool(gemini_api_key)
     
     def validate_plant_image(self, image_path: str) -> Dict[str, Any]:
         """
@@ -30,6 +32,15 @@ class ImageValidationService:
         Returns validation result with confidence score.
         """
         try:
+            # If Gemini key not configured, skip primary validation
+            if not self.enabled or not self.gemini_url:
+                return {
+                    "is_plant": False,
+                    "confidence": 0.0,
+                    "reason": "Gemini API key not configured",
+                    "error": True
+                }
+
             # Read and encode image
             with open(image_path, 'rb') as f:
                 image_data = f.read()
@@ -132,6 +143,10 @@ class PlantIdentificationService:
     def identify_with_gemini(self, image_path: str) -> Dict[str, Any]:
         """Primary identification using Gemini API"""
         try:
+            # If Gemini not enabled, return failure immediately
+            if not self.enabled or not self.gemini_url:
+                return {"success": False, "error": "Gemini API key not configured", "service": "gemini"}
+
             base64_image = self._encode_image(image_path)
             
             prompt = """
@@ -322,6 +337,30 @@ class PlantIdentificationService:
                 "fallback_used": True,
                 "primary_failed": True
             }
+
+        # Fallback 3: local TFLite inference as a best-effort identification
+        try:
+            local_service = get_inference_service()
+            pred = local_service.predict_crop(image_path)
+            # Build a minimal plant_data structure from the model prediction
+            plant_data = {
+                "plant_name": pred.get('crop_type', 'Unknown'),
+                "scientific_name": pred.get('detected_raw_crop', 'Unknown'),
+                "family": "Unknown",
+                "confidence": pred.get('confidence_score', 0.0),
+                "characteristics": [],
+                "care_level": "beginner"
+            }
+            return {
+                "success": True,
+                "plant_data": plant_data,
+                "service_used": "local_model",
+                "fallback_used": True,
+                "primary_failed": True
+            }
+        except Exception as e:
+            # If local inference also fails, continue to final failure
+            pass
         
         # All services failed
         return {

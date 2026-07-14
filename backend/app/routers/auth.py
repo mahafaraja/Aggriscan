@@ -5,6 +5,11 @@ from ..database import SessionLocal, get_db
 from .. import schemas, crud, auth
 from ..services.sms import get_sms_service, normalize_phone_number, is_demo_phone_number
 import logging
+try:
+    from firebase_admin import auth as firebase_auth
+    FIREBASE_ADMIN_AVAILABLE = True
+except Exception:
+    FIREBASE_ADMIN_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +53,8 @@ def send_sms_verification(request: schemas.SMSSendRequest):
     sms_service = get_sms_service()
     success = sms_service.send_verification_code(
         phone_number=normalized_phone,
-        message="Your Agriscan verification code is:"
+        message="Your Agriscan verification code is:",
+        recaptcha_token=getattr(request, 'recaptcha_token', None)
     )
     
     if not success:
@@ -109,3 +115,44 @@ def verify_sms_code(request: schemas.SMSVerifyRequest):
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/firebase/verify", response_model=schemas.Token)
+def verify_firebase_token(request: schemas.FirebaseVerifyRequest):
+    """
+    Accepts a Firebase ID token from the client, verifies it with Firebase Admin,
+    and issues a backend JWT for the user. Requires firebase-admin to be configured.
+    """
+    if not FIREBASE_ADMIN_AVAILABLE:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Firebase Admin SDK not available on server")
+
+    try:
+        decoded = firebase_auth.verify_id_token(request.id_token)
+        phone = decoded.get('phone_number') or decoded.get('phoneNumber') or decoded.get('phone')
+        if not phone:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ID token does not contain phone number")
+    except Exception as exc:
+        logger.error(f"Failed to verify Firebase ID token: {exc}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Firebase ID token")
+
+    # Ensure user exists in local DB and issue JWT
+    db = SessionLocal()
+    try:
+        user = crud.get_user_by_phone(db, phone_number=phone)
+        if not user:
+            user_in = schemas.UserCreate(
+                phone_number=phone,
+                password="default_password",
+                role="farmer",
+                sub_county="Unknown"
+            )
+            user = crud.create_user(db=db, user_in=user_in)
+
+        access_token_expires = timedelta(minutes=auth.settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = auth.create_access_token(
+            data={"sub": user.phone_number, "role": user.role},
+            expires_delta=access_token_expires
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+    finally:
+        db.close()

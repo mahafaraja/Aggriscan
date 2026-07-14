@@ -25,10 +25,14 @@ class UserLogin(BaseModel):
 
 class SMSSendRequest(BaseModel):
     phone_number: str
+    recaptcha_token: Optional[str] = None
 
 class SMSVerifyRequest(BaseModel):
     phone_number: str
     code: str
+
+class FirebaseVerifyRequest(BaseModel):
+    id_token: str
 
 class Token(BaseModel):
     access_token: str

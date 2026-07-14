@@ -1,6 +1,12 @@
+import { Platform } from 'react-native';
 
 // frontend/src/config/api.ts
-const defaultApiUrl = 'https://aggriscan.onrender.com';
+const defaultApiUrl =
+  process.env.EXPO_PUBLIC_API_BASE_URL?.trim() ||
+  (__DEV__
+    ? Platform.OS === 'android'
+      ? 'http://10.0.2.2:8000'
+      : 'http://127.0.0.1:8000'
+    : 'https://agriscan.onrender.com');
 
-export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || defaultApiUrl;
+export const API_BASE_URL = defaultApiUrl;

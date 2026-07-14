@@ -42,3 +42,7 @@ coverage.xml
 *.swp
 .DS_Store
 Thumbs.db
+
+# Firebase credentials (NEVER commit these)
+app/services/config/firebase_sms.json
+*.firebase_sms.json
