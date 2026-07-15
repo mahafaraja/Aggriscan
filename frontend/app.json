@@ -1,5 +1,6 @@
 {
   "expo": {
+  
     "name": "Agriscan",
     "slug": "agriscan",
     "version": "1.0.0",
@@ -36,18 +37,7 @@
       }
     },
     "plugins": [
-      [
-        "expo-font",
-        {
-          "fonts": [
-            "./assets/fonts/Poppins-Regular.ttf",
-            "./assets/fonts/Poppins-Medium.ttf",
-            "./assets/fonts/Poppins-SemiBold.ttf",
-            "./assets/fonts/Poppins-Bold.ttf"
-          ]
-        }
-      ],
-      "expo-sqlite"
+      
     ],
     "assetBundlePatterns": [
       "assets/**/*.png",
