@@ -15,6 +15,7 @@
     "owner": "faraja_maha",
     "android": {
       "package": "com.faraja_maha.agriscan",
+      "icon": "./assets/adaptive-icon.png",
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
