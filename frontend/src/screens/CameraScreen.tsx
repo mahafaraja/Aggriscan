@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Image, SafeAreaView } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Camera } from 'expo-camera';
 import * as Location from 'expo-location';
 import { processScanImage } from '../services/scanProcessor';
 import { LocationIcon } from '../components/Icons';
@@ -14,14 +14,14 @@ interface CameraScreenProps {
 
 export default function CameraScreen({ onNavigate, onScanComplete }: CameraScreenProps) {
   // Use Expo's native hook for handling camera permissions seamlessly
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [cameraPermission, setCameraPermission] = useState<any>(null);
   const [hasLocationPermission, setHasLocationPermission] = useState<boolean | null>(null);
   const [permissionsReady, setPermissionsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lon: number } | null>(null);
 
-  const cameraRef = useRef<CameraView>(null);
+  const cameraRef = useRef<Camera>(null);
 
   // Initialize permissions on component mount
   useEffect(() => {
@@ -30,8 +30,9 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
     (async () => {
       try {
         // 1. Trigger modern camera permission sequence
-        if (!cameraPermission?.granted) {
-          await requestCameraPermission();
+        const permission = await Camera.requestCameraPermissionsAsync();
+        if (!cancelled) {
+          setCameraPermission(permission);
         }
 
         // 2. Trigger Foreground GPS permissions
@@ -67,7 +68,7 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
     return () => {
       cancelled = true;
     };
-  }, [cameraPermission, requestCameraPermission]);
+  }, []);
 
   const handleCapture = async () => {
     if (!cameraRef.current || isProcessing) return;
@@ -75,8 +76,8 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
 
     try {
       // 1. Capture snap-frame using the correct layout configuration
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
-      if (!photo?.uri) throw new Error("Failed to capture image data URI");
+      const photo = await cameraRef.current.takePictureAsync();
+      if (!photo || !photo.uri) throw new Error("Failed to capture image data URI");
       setCapturedImage(photo.uri);
 
       // 2. Fetch coordinate points
@@ -143,13 +144,13 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
       {/* Main viewport */}
       <View style={styles.viewport}>
         {!capturedImage ? (
-          <CameraView style={styles.camera} ref={cameraRef}>
+          <Camera style={styles.camera} ref={cameraRef}>
             <View style={styles.overlayContainer}>
               <View style={styles.targetFrame}>
                 <Text style={styles.frameInstruction}>Align Leaf or Stem inside box</Text>
               </View>
             </View>
-          </CameraView>
+          </Camera>
         ) : (
           <View style={styles.previewContainer}>
             <Image source={{ uri: capturedImage }} style={styles.previewImage} />
