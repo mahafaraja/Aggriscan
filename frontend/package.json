@@ -19,7 +19,7 @@
     "expo-status-bar": "~56.0.4",
     "firebase": "^12.16.0",
     "iconsax-react-native": "^0.0.8",
-    "react": "^19.2.3",
+    "react": "19.2.3",
     "react-native": "0.85.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-svg": "15.15.4",

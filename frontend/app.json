@@ -4,9 +4,7 @@
     "name": "Agriscan",
     "slug": "agriscan",
     "version": "1.0.0",
-    "cli": {
-      "appVersionSource": "remote"
-    },
+    
     "extra": {
       "eas": {
         "projectId": "03a79f6c-d066-476d-bca2-ddb2a659b8fc"
