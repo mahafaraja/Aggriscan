@@ -40,8 +40,8 @@ export default function AddPhotoScreen({ onBack, onScanComplete }: AddPhotoScree
       quality: 0.85,
     });
 
-    if (!result.cancelled && result.uri) {
-      setImageUri(result.uri);
+    if (!result.canceled && result.assets && result.assets[0]?.uri) {
+      setImageUri(result.assets[0].uri);
     }
   };
 

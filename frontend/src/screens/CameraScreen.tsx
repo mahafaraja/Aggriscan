@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Image, SafeAreaView } from 'react-native';
-import { Camera } from 'expo-camera';
+import { Camera, CameraView, CameraType } from 'expo-camera';
 import * as Location from 'expo-location';
 import { processScanImage } from '../services/scanProcessor';
 import { LocationIcon } from '../components/Icons';
@@ -20,8 +20,9 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [facing, setFacing] = useState<CameraType>('back');
 
-  const cameraRef = useRef<Camera>(null);
+  const cameraRef = useRef<any>(null);
 
   // Initialize permissions on component mount
   useEffect(() => {
@@ -144,13 +145,13 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
       {/* Main viewport */}
       <View style={styles.viewport}>
         {!capturedImage ? (
-          <Camera style={styles.camera} ref={cameraRef}>
+          <CameraView style={styles.camera} ref={cameraRef} facing={facing}>
             <View style={styles.overlayContainer}>
               <View style={styles.targetFrame}>
                 <Text style={styles.frameInstruction}>Align Leaf or Stem inside box</Text>
               </View>
             </View>
-          </Camera>
+          </CameraView>
         ) : (
           <View style={styles.previewContainer}>
             <Image source={{ uri: capturedImage }} style={styles.previewImage} />
