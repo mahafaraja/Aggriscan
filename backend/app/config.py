@@ -17,7 +17,7 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
     
     # SMS Configuration
-    SMS_PROVIDER: str = os.getenv("SMS_PROVIDER", "mock")  # Options: mock, africastalking, twilio, firebase
+    SMS_PROVIDER: str = os.getenv("SMS_PROVIDER", "mock")  # Options: mock, africastalking, twilio, firebase, yoola
     AFRICASTALKING_API_KEY: str = os.getenv("AFRICASTALKING_API_KEY", "")
     AFRICASTALKING_USERNAME: str = os.getenv("AFRICASTALKING_USERNAME", "")
     TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID", "")
@@ -25,5 +25,7 @@ class Settings:
     TWILIO_PHONE_NUMBER: str = os.getenv("TWILIO_PHONE_NUMBER", "")
     FIREBASE_CREDENTIALS: str = os.getenv("FIREBASE_CREDENTIALS", "services/config/firebase_sms.json")
     FIREBASE_WEB_API_KEY: str = os.getenv("FIREBASE_WEB_API_KEY", "")
+    YOLLA_SMS_API_KEY: str = os.getenv("YOLLA_SMS_API_KEY", "")
+    YOLLA_SMS_API_BASE: str = os.getenv("YOLLA_SMS_API_BASE", "https://yoolasms.com/api/v1")
 
 settings = Settings()

@@ -71,6 +71,9 @@ class SMSService:
             firebase_service = get_firebase_sms_service()
             return firebase_service.send_verification_code(phone_number, f"{message} {code}", recaptcha_token=recaptcha_token)
         
+        elif self.provider == "yoola":
+            return self._send_yoola(phone_number, f"{message} {code}")
+        
         else:
             logger.error(f"Unknown SMS provider: {self.provider}")
             return False
@@ -126,6 +129,39 @@ class SMSService:
             return True
         except Exception as e:
             logger.error(f"Failed to send SMS via Twilio: {e}")
+            return False
+    
+    def _send_yoola(self, phone_number: str, message: str) -> bool:
+        """Send SMS via YoolaSMS"""
+        try:
+            import requests
+            
+            if not settings.YOLLA_SMS_API_KEY:
+                logger.error("YoolaSMS API key not configured")
+                return False
+            
+            response = requests.post(
+                f"{settings.YOLLA_SMS_API_BASE}/send_sms",
+                headers={
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'api_key': settings.YOLLA_SMS_API_KEY,
+                    'phone': phone_number,
+                    'message': message,
+                },
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"YoolaSMS sent successfully to {phone_number}")
+                return True
+            else:
+                logger.error(f"YoolaSMS error {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Failed to send SMS via YoolaSMS: {e}")
             return False
 
 # Singleton instance
