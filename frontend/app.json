@@ -34,7 +34,10 @@
         },
         "NSCameraUsageDescription": "Allow Agriscan to access your camera to scan crop leaves for disease detection",
         "NSLocationWhenInUseUsageDescription": "Allow Agriscan to access your location for geospatial disease mapping",
-        "NSPhotoLibraryUsageDescription": "Allow Agriscan to access your photo library to select images for scanning"
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Agriscan to access your location for geospatial disease mapping",
+        "NSPhotoLibraryUsageDescription": "Allow Agriscan to access your photo library to select images for scanning",
+        "NSPhotoLibraryAddUsageDescription": "Allow Agriscan to save scanned images to your photo library",
+        "NSMicrophoneUsageDescription": "Allow Agriscan to access your microphone for audio features"
       }
     },
     "plugins": [

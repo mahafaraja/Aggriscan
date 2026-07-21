@@ -12,17 +12,13 @@
       "android": {
         "buildType": "apk"
       },
-      "ios": {
-        "buildType": "simulator"
-      }
+      "ios": {}
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
       },
-      "ios": {
-        "buildType": "archive"
-      }
+      "ios": {}
     }
   }
 }
