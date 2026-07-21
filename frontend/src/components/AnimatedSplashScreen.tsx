@@ -43,7 +43,7 @@ export function AnimatedSplashScreen({ onAnimationComplete }: { onAnimationCompl
               duration: 800,
               useNativeDriver: true,
             }),
-          }),
+          ]),
           // Hold for a moment
           Animated.delay(500),
           // Fade out
