@@ -11,7 +11,11 @@
     "owner": "faraja_maha",
     "android": {
       "package": "com.faraja_maha.agriscan",
-      "icon": "./assets/adaptive-icon.png",
+      "icon": "./assets/icon.svg",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -34,8 +38,23 @@
       }
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "networkSecurityConfig": true,
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
+    "splash": {
+      "image": "./assets/icon.svg",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff",
+      "enableDismiss": false
+    },
     "assetBundlePatterns": [
       "assets/**/*.png",
       "assets/**/*.jpg",
