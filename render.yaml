@@ -20,11 +20,11 @@ services:
       - key: SMS_PROVIDER
         value: yoola
       - key: YOLLA_SMS_API_KEY
-        sync: false
+        sync: true
       - key: YOLLA_SMS_API_BASE
         value: https://yoolasms.com/api/v1
       - key: GEMINI_API_KEY
-        sync: false
+        sync: true
       - key: PLANTID_API_KEY
         sync: false
       - key: PLANTNET_API_KEY
