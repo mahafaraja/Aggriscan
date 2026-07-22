@@ -17,7 +17,7 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
     
     # SMS Configuration
-    SMS_PROVIDER: str = os.getenv("SMS_PROVIDER", "mock")  # Options: mock, africastalking, twilio, firebase, yoola
+    SMS_PROVIDER: str = os.getenv("SMS_PROVIDER", "yoola")  # Options: mock, africastalking, twilio, firebase, yoola
     AFRICASTALKING_API_KEY: str = os.getenv("AFRICASTALKING_API_KEY", "")
     AFRICASTALKING_USERNAME: str = os.getenv("AFRICASTALKING_USERNAME", "")
     TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID", "")

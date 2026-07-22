@@ -1,11 +1,16 @@
 import random
 import logging
 import re
+import time
 from typing import Optional
 from ..config import settings
 from .firebase_sms import get_firebase_sms_service
 
 logger = logging.getLogger(__name__)
+
+# Retry configuration
+MAX_RETRIES = 2
+RETRY_DELAY_SECONDS = 15  # Wait 15 seconds between retries
 
 DEMO_PHONE_NUMBER = "+256762000000"
 DEMO_VERIFICATION_CODE = "123456"
@@ -51,7 +56,7 @@ class SMSService:
         return code
     
     def send_verification_code(self, phone_number: str, message: str, recaptcha_token: Optional[str] = None) -> bool:
-        """Send SMS verification code based on configured provider"""
+        """Send SMS verification code based on configured provider with retry logic"""
         code = self.generate_verification_code(phone_number)
         
         if self.provider == "mock":
@@ -60,23 +65,69 @@ class SMSService:
             print(f"[MOCK SMS] Verification code for {phone_number}: {code}")
             return True
         
-        elif self.provider == "africastalking":
-            return self._send_africastalking(phone_number, f"{message} {code}")
+        # Retry logic for real SMS providers
+        last_error = None
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                logger.info(f"Attempting to send SMS to {phone_number} (attempt {attempt}/{MAX_RETRIES})")
+                
+                if self.provider == "africastalking":
+                    result = self._send_africastalking(phone_number, f"{message} {code}")
+                elif self.provider == "twilio":
+                    result = self._send_twilio(phone_number, f"{message} {code}")
+                elif self.provider == "firebase":
+                    firebase_service = get_firebase_sms_service()
+                    result = firebase_service.send_verification_code(phone_number, f"{message} {code}", recaptcha_token=recaptcha_token)
+                elif self.provider == "yoola":
+                    result = self._send_yoola(phone_number, f"{message} {code}")
+                else:
+                    logger.error(f"Unknown SMS provider: {self.provider}")
+                    return False
+                
+                if result:
+                    logger.info(f"SMS sent successfully to {phone_number} on attempt {attempt}")
+                    return True
+                
+                last_error = "SMS service returned unsuccessful response"
+                
+            except Exception as e:
+                last_error = str(e)
+                logger.error(f"Attempt {attempt} failed for {phone_number}: {e}")
+            
+            # Wait before retry (except on last attempt)
+            if attempt < MAX_RETRIES:
+                logger.info(f"Waiting {RETRY_DELAY_SECONDS} seconds before retry...")
+                time.sleep(RETRY_DELAY_SECONDS)
         
-        elif self.provider == "twilio":
-            return self._send_twilio(phone_number, f"{message} {code}")
-
-        elif self.provider == "firebase":
-            # Use Firebase Admin to record user and attempt minimal verification flow
-            firebase_service = get_firebase_sms_service()
-            return firebase_service.send_verification_code(phone_number, f"{message} {code}", recaptcha_token=recaptcha_token)
+        # All retries failed
+        error_message = self._get_user_friendly_error_message(last_error)
+        logger.error(f"Failed to send SMS to {phone_number} after {MAX_RETRIES} attempts: {last_error}")
+        raise Exception(error_message)
+    
+    def _get_user_friendly_error_message(self, technical_error: Optional[str]) -> str:
+        """Convert technical errors to user-friendly messages"""
+        if not technical_error:
+            return "Unable to send verification code. Please check your phone number and try again."
         
-        elif self.provider == "yoola":
-            return self._send_yoola(phone_number, f"{message} {code}")
+        error_lower = technical_error.lower()
+        
+        if "timeout" in error_lower or "connection" in error_lower:
+            return "Network connection issue. Please check your internet and try again in a moment."
+        
+        elif "api key" in error_lower or "unauthorized" in error_lower or "401" in error_lower:
+            return "SMS service configuration error. Please contact support if this persists."
+        
+        elif "404" in error_lower or "not found" in error_lower:
+            return "SMS service temporarily unavailable. Please try again later."
+        
+        elif "500" in error_lower or "server error" in error_lower:
+            return "SMS service is experiencing issues. Please try again in a few minutes."
+        
+        elif "invalid phone" in error_lower or "phone number" in error_lower:
+            return "Invalid phone number format. Please enter a valid Ugandan phone number."
         
         else:
-            logger.error(f"Unknown SMS provider: {self.provider}")
-            return False
+            return "Unable to send verification code. Please try again or contact support if the problem continues."
     
     def verify_code(self, phone_number: str, code: str) -> bool:
         """Verify the submitted code matches the stored one"""
