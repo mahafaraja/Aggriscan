@@ -43,6 +43,15 @@
     "plugins": [
       "expo-font",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.svg",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "imageWidth": 200
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
@@ -52,12 +61,6 @@
         }
       ]
     ],
-    "splash": {
-      "image": "./assets/icon.svg",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff",
-      "enableDismiss": false
-    },
     "assetBundlePatterns": [
       "assets/**/*.png",
       "assets/**/*.jpg",
