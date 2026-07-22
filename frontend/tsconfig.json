@@ -11,11 +11,11 @@
         "*",
         "src/*"
       ]
-    }
+    },
+    "skipLibCheck": true
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx",
-    "src/types/**/*.ts"
+    "**/*.tsx"
   ]
 }
