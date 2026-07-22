@@ -1,65 +1,130 @@
 # Agriscan
 
+**Final Year Project - Victoria University**
+
 Agriscan is a mobile application for plant disease scanning and treatment guidance, designed for Ugandan farmers. It features a React Native/Expo frontend with a FastAPI backend, utilizing TensorFlow Lite for on-device crop disease detection, PostgreSQL with PostGIS for geospatial data storage, and SMS-based authentication.
+
+---
 
 ## Table of Contents
 
+- [About the Project](#about-the-project)
+- [Contributors](#contributors)
 - [Tech Stack](#tech-stack)
+- [Tools & Technologies Used](#tools--technologies-used)
 - [Project Structure](#project-structure)
+- [Screen Flow](#screen-flow)
+- [Dataset & Models](#dataset--models)
+- [Fallback System](#fallback-system)
+- [Supported Crops](#supported-crops)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Detailed Setup Guide](#detailed-setup-guide)
-  - [1. Database and Redis Setup](#1-database-and-redis-setup)
-  - [2. Backend Setup](#2-backend-setup)
-  - [3. Frontend Setup](#3-frontend-setup)
-  - [4. Docker Containerization](#4-docker-containerization)
+- [Testing](#testing)
+- [Hosting & Deployment](#hosting--deployment)
 - [API Documentation](#api-documentation)
-- [SMS Authentication](#sms-authentication)
-- [Crop Detection Model](#crop-detection-model)
-- [Screen Flow](#screen-flow)
 - [Environment Variables](#environment-variables)
 - [Troubleshooting](#troubleshooting)
+- [Citation](#citation)
+
+---
+
+## About the Project
+
+Agriscan addresses the critical need for early plant disease detection among smallholder farmers in Uganda. The app enables farmers to:
+
+- Scan crop leaves using their phone camera
+- Get instant disease diagnosis with confidence scores
+- Receive treatment and prevention recommendations
+- Track disease outbreaks in their area
+- Access information offline in low-connectivity areas
+
+The application uses machine learning to detect diseases across 8 crop types with 16 different disease classes, providing farmers with actionable insights to protect their harvests.
+
+---
+
+## Contributors
+
+| Student Name | Registration Number | Programme |
+|--------------|---------------------|-----------|
+| MAJER JACOB | VU-BCS-2311-0602-DAY | BCS |
+| FARAJA MAHA | VU-BCS-2307-0240-DAY | BCS |
+| RICHARD OCHIENG | VU-BCS-2301-1052-DAY | BCS |
+| MASEREKA LANDUS | VU-BIT-2037-0647-DAY | BIT |
+| MUGISA ALVIN | VU-BCS-2411-0525-DAY | BCS |
+| WAKALANGA DENIS ROGERS | VU-BCS-2403-0370-EVE | BCS |
+| REBECCA PEMBA MOLE | VU-BIT-2201-1634-DAY | BIT |
+
+**Supervisor:** Bazigu Alex  
+**Institution:** Victoria University
+
+---
 
 ## Tech Stack
 
 ### Frontend
-- **React Native** - Mobile app framework
-- **Expo SDK 56** - Development platform and tooling
-- **TypeScript** - Type-safe development
+- **React Native** - Cross-platform mobile framework
+- **Expo SDK 56** - Development platform and build tooling
+- **TypeScript** - Type-safe JavaScript
 - **Expo Camera** - Camera access for leaf scanning
 - **Expo Image Picker** - Gallery photo selection
 - **Expo Location** - GPS coordinates for disease mapping
 - **Expo SQLite** - Local offline storage
 - **Expo Secure Store** - Secure token storage
-- **React Native SVG** - Vector graphics and icons
+- **React Native SVG** - Vector graphics
 - **Iconsax React Native** - Icon library
 
 ### Backend
 - **FastAPI** - Modern Python web framework
 - **Uvicorn** - ASGI server
 - **SQLAlchemy 2.0** - ORM for database operations
-- **Pydantic** - Data validation and settings
-- **PostgreSQL 15 with PostGIS 3.3** - Geospatial database
+- **Pydantic** - Data validation
+- **PostgreSQL 15** - Relational database
+- **PostGIS 3.3** - Geospatial data extension
 - **Redis 7** - Caching and session management
-- **Python-JOSE** - JWT token handling
-- **Passlib** - Password hashing with bcrypt
+- **Python-JOSE** - JWT authentication
+- **Passlib** - Password hashing (bcrypt)
 - **TensorFlow Lite** - On-device ML inference
 - **Pillow & NumPy** - Image processing
 
-### Dev Tools
-- **Docker & Docker Compose** - Containerization
+### Machine Learning
+- **TensorFlow 2.x** - Deep learning framework
+- **MobileNetV2** - Pre-trained base model (transfer learning)
+- **TensorFlow Lite** - Optimized mobile inference
+
+---
+
+## Tools & Technologies Used
+
+### Development Tools
+- **Docker & Docker Compose** - Containerization and orchestration
 - **npm** - Frontend package management
 - **Python venv** - Backend virtual environment
-- **pytest** - Testing framework
-- **TypeScript** - Frontend type checking
+- **Git** - Version control
+- **VS Code** - Code editor
+
+### Testing Tools
+- **pytest** - Backend testing framework
+- **TypeScript Compiler** - Frontend type checking
+
+### Design & Prototyping
+- **Figma** - UI/UX design and prototyping
+  - [View Design File](https://www.figma.com/design/i1rdzTraE8t7mXiHDUVK7c/agriscan?node-id=0-1&t=BUGLesJd75OwV1QP-1)
+
+### SMS Providers (Production)
+- **Africa's Talking** - SMS service for Uganda
+- **Twilio** - Alternative SMS provider
+- **Firebase Cloud Messaging** - Push notifications (optional)
+
+---
 
 ## Project Structure
 
 ```
 Agriscan/
-├── frontend/                    # React Native Expo app
+├── frontend/                          # React Native Expo app
 │   ├── src/
-│   │   ├── screens/            # Screen components
+│   │   ├── screens/                   # Screen components
 │   │   │   ├── GetStartedScreen.tsx
 │   │   │   ├── HomeScreen.tsx
 │   │   │   ├── CameraScreen.tsx
@@ -67,61 +132,338 @@ Agriscan/
 │   │   │   ├── ScanResultScreen.tsx
 │   │   │   ├── TreatmentPreventionScreen.tsx
 │   │   │   ├── HealthyScreen.tsx
-│   │   │   └── auth/           # Authentication screens
-│   │   ├── services/           # Business logic
-│   │   │   ├── backendApi.ts   # Backend API calls
-│   │   │   ├── tflite.ts       # Local ML inference
-│   │   │   ├── db.ts           # SQLite operations
-│   │   │   └── sync.ts         # Offline sync
-│   │   ├── components/         # Reusable components
-│   │   ├── theme/              # Styling and themes
-│   │   ├── types/              # TypeScript types
-│   │   └── config/             # Configuration
-│   ├── App.tsx                 # Main app component
-│   ├── package.json
-│   └── tsconfig.json
-├── backend/                    # FastAPI backend
+│   │   │   └── auth/                  # Authentication screens
+│   │   ├── services/                  # Business logic
+│   │   │   ├── backendApi.ts         # Backend API calls
+│   │   │   ├── tflite.ts             # Local ML inference
+│   │   │   ├── db.ts                 # SQLite operations
+│   │   │   └── sync.ts               # Offline sync
+│   │   ├── components/                # Reusable UI components
+│   │   ├── theme/                     # Styling and themes
+│   │   ├── types/                     # TypeScript definitions
+│   │   └── config/                    # Configuration files
+│   ├── App.tsx                        # Main app entry point
+│   ├── package.json                   # Dependencies
+│   └── tsconfig.json                  # TypeScript config
+│
+├── backend/                           # FastAPI backend
 │   ├── app/
-│   │   ├── main.py             # Application entry point
-│   │   ├── config.py           # Configuration settings
-│   │   ├── database.py         # Database connection
-│   │   ├── models.py           # SQLAlchemy models
-│   │   ├── schemas.py          # Pydantic schemas
-│   │   ├── crud.py             # Database operations
-│   │   ├── auth.py             # Authentication logic
-│   │   ├── routers/            # API endpoints
-│   │   │   ├── auth.py         # Auth endpoints
-│   │   │   └── reports.py      # Report endpoints
-│   │   ├── services/           # Business services
-│   │   │   ├── inference.py    # ML inference service
-│   │   │   └── sms.py          # SMS service
-│   │   └── model_assets/       # ML model files
-│   │       ├── agriscan_model.tflite
-│   │       └── class_map.json
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── .env.example
-├── docker-compose.yml          # Container orchestration
-├── init-db.sql                 # Database initialization
-└── README.md
+│   │   ├── main.py                    # Application entry point
+│   │   ├── config.py                  # Configuration settings
+│   │   ├── database.py                # Database connection
+│   │   ├── models.py                  # SQLAlchemy models
+│   │   ├── schemas.py                 # Pydantic schemas
+│   │   ├── crud.py                    # Database operations
+│   │   ├── auth.py                    # Authentication logic
+│   │   ├── routers/                   # API endpoints
+│   │   │   ├── auth.py               # Auth endpoints
+│   │   │   └── reports.py            # Report endpoints
+│   │   ├── services/                  # Business services
+│   │   │   ├── inference.py          # ML inference service
+│   │   │   ├── sms.py                # SMS service
+│   │   │   └── firebase_sms.py       # Firebase SMS integration
+│   │   └── model_assets/              # ML model files
+│   │       ├── agriscan_model.tflite # Current model
+│   │       ├── class_map.json        # Class labels
+│   │       └── pretrained/           # High-accuracy models
+│   ├── tests/                         # Backend tests
+│   │   └── test_sms_auth.py
+│   ├── requirements.txt               # Python dependencies
+│   ├── Dockerfile                     # Container definition
+│   └── .env.example                   # Environment template
+│
+├── ml/                                # Machine Learning scripts
+│   ├── train.py                       # Basic training script
+│   ├── train_transfer_learning.py     # Transfer learning (MobileNetV2)
+│   ├── preprocess_dataset.py          # Dataset preprocessing
+│   ├── setup_pretrained_model.py      # Model setup utilities
+│   └── backend/                       # ML backend integration
+│
+├── docker-compose.yml                 # Database & Redis orchestration
+├── init-db.sql                        # Database initialization
+├── render.yaml                        # Deployment configuration
+└── README.md                          # This file
 ```
+
+---
+
+## Screen Flow
+
+The application follows this user journey:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  1. Get Started Screen                                      │
+│     - Welcome message                                       │
+│     - "Get Started" button                                  │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│  2. Authentication Flow (SMS-based)                         │
+│     - Enter phone number                                    │
+│     - Receive verification code via SMS                     │
+│     - Enter code to verify                                  │
+│     - Auto-login with JWT token                             │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│  3. Home Screen (Main Dashboard)                            │
+│     - Scan button (camera)                                  │
+│     - Upload from gallery                                   │
+│     - Recent scans history                                  │
+│     - Statistics overview                                   │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│  4. Camera Screen / Add Photo Screen                        │
+│     - Live camera view                                      │
+│     - Capture leaf image                                    │
+│     - OR select from gallery                                │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│  5. Scan Result Screen                                      │
+│     - Disease detected / Healthy                            │
+│     - Confidence score                                      │
+│     - Severity level                                        │
+│     - Crop type identified                                  │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+            ┌───────────┴───────────┐
+            │                       │
+            ▼                       ▼
+┌──────────────────────┐   ┌──────────────────────┐
+│  Diseased            │   │  Healthy             │
+│  - Treatment info    │   │  - Confirmation      │
+│  - Prevention tips   │   │  - Continue farming  │
+│  - Action steps      │   └──────────────────────┘
+└──────────────────────┘
+```
+
+---
+
+## Dataset & Models
+
+### Dataset Source
+
+The models are trained on the **PlantVillage Dataset**, a publicly available dataset containing:
+
+- **38,000+ images** of healthy and diseased crop leaves
+- **8 crop types** (Banana, Bean, Cassava, Coffee, Corn, Groundnuts, Potato, Tomato)
+- **16 disease classes** plus healthy variants
+- Images captured under controlled conditions with consistent lighting
+
+**Dataset Citation:**
+> Hughes, D. P., & Salathé, M. (2015). An open access repository of images on plant health to enable the development of mobile disease diagnostics. *arXiv preprint arXiv:1511.08060*.
+
+### Model Architecture
+
+#### Current Model (agriscan_model.tflite)
+- **Architecture:** MobileNetV2 (Transfer Learning)
+- **Base Model:** Pre-trained on ImageNet (1.4M images)
+- **Custom Head:** Dense layers (128 units) with dropout
+- **Input Size:** 224x224 pixels
+- **Optimization:** Float16 quantization for mobile deployment
+
+#### Model Performance
+
+| Model | Training Data | Accuracy | Size | Use Case |
+|-------|--------------|----------|------|----------|
+| **Current (agriscan_model.tflite)** | Synthetic (random noise) | ~10% | ~50 MB | Development only |
+| **Pretrained (plant_village_model.tflite)** | Real crop images (38K+) | **95-97%** | ~14 MB | Production |
+
+**Note:** The current model in the repository was trained on synthetic data for development purposes. For production use, train the model using the PlantVillage dataset (see [Training Guide](#model-training)).
+
+### Model Training
+
+#### Option 1: Train on Kaggle (Recommended - Free GPU)
+
+See **[KAGGLE_TRAINING_GUIDE.md](KAGGLE_TRAINING_GUIDE.md)** for step-by-step instructions.
+
+**Benefits:**
+- Free GPU (Tesla P100/P4)
+- No local GPU required
+- PlantVillage dataset pre-loaded
+- Training time: 30-60 minutes
+- Cost: $0
+
+**Steps:**
+1. Create Kaggle account
+2. Create new notebook with GPU enabled
+3. Add PlantVillage dataset
+4. Run training code from `ml/train_transfer_learning.py`
+5. Download trained model (~14 MB)
+6. Deploy to `backend/app/model_assets/pretrained/`
+
+#### Option 2: Train Locally
+
+**Requirements:**
+- GPU recommended (30-60 min training)
+- 2.3 GB dataset download
+- TensorFlow 2.10+
+
+**Steps:**
+```bash
+# 1. Download PlantVillage dataset
+# Available at: https://data.mendeley.com/datasets/tywbtsjrjv/1
+
+# 2. Preprocess dataset
+python ml/preprocess_dataset.py --input_dir ./plant_village --output_dir ./dataset
+
+# 3. Train model
+python ml/train_transfer_learning.py --data_dir ./dataset --epochs 10 --fine_tune
+
+# 4. Model will be saved to ./tflite/plant_village_model.tflite
+```
+
+#### Option 3: Use Pre-trained Model
+
+If you have a pre-trained TFLite model:
+```bash
+mkdir -p backend/app/model_assets/pretrained
+cp /path/to/your/model.tflite backend/app/model_assets/pretrained/plant_village_model.tflite
+cp /path/to/your/class_map.json backend/app/model_assets/pretrained/class_map.json
+```
+
+### Model Location
+
+- **Current (low accuracy):** `backend/app/model_assets/agriscan_model.tflite`
+- **Pretrained (high accuracy):** `backend/app/model_assets/pretrained/plant_village_model.tflite`
+- **Class Map:** `backend/app/model_assets/class_map.json`
+
+### Inference Process
+
+1. Image is resized to 224x224 pixels
+2. Preprocessed (normalized to [0, 255] range)
+3. Fed to TFLite model
+4. Model returns probability distribution over 16 classes
+5. Highest probability class is selected
+6. Disease label and severity are determined
+
+### Local vs Backend Inference
+
+The app supports both inference modes:
+
+- **Local Inference (Offline):** TFLite model runs on device using `expo-tflite` or similar
+- **Backend Inference (Online):** Image sent to FastAPI server for inference
+
+This dual approach ensures the app works in low-connectivity areas.
+
+---
+
+## Fallback System
+
+Agriscan implements a robust fallback system to ensure reliability:
+
+### 1. Offline Mode
+- **Local Storage:** SQLite database stores scan history
+- **Local Inference:** TFLite model runs on-device without internet
+- **Sync Queue:** Scans are queued and synced when connection returns
+
+### 2. Backend Fallback
+- If backend API is unreachable, app uses local TFLite inference
+- Results may be slightly less accurate but functional
+- User is notified of offline mode
+
+### 3. Model Fallback
+- If pretrained model fails to load, falls back to current model
+- Graceful degradation with user notification
+- Logs errors for debugging
+
+### 4. SMS Fallback
+- Multiple SMS providers supported (Africa's Talking, Twilio, Firebase)
+- Mock provider for development/testing
+- Automatic retry on failure
+
+---
+
+## Supported Crops
+
+The application can detect diseases across **8 crop types** with **16 disease classes**:
+
+### Banana
+- Banana BBW (Bacterial Wilt)
+- Banana Black Sigatoka
+- Banana Healthy
+
+### Bean
+- Bean Angular Leaf Spot
+- Bean Rust
+- Bean Healthy
+
+### Cassava
+- Cassava Bacterial Blight
+- Cassava Brown Spot
+- Cassava CMD (Mosaic Disease)
+- Cassava Green Mottle
+- Cassava Healthy
+
+### Coffee
+- Coffee Rust
+- Coffee Healthy
+
+### Corn (Maize)
+- Corn Common Rust
+- Corn Gray Leaf Spot
+- Corn Northern Leaf Blight
+- Corn Healthy
+
+### Groundnuts
+- Groundnuts Early Leaf Spot
+- Groundnuts Late Leaf Spot
+- Groundnuts Healthy
+
+### Potato
+- Potato Early Blight
+- Potato Late Blight
+- Potato Healthy
+
+### Tomato
+- Tomato Bacterial Spot
+- Tomato Early Blight
+- Tomato Late Blight
+- Tomato Leaf Mold
+- Tomato Septoria Leaf Spot
+- Tomato Spider Mites
+- Tomato Target Spot
+- Tomato Yellow Leaf Curl Virus
+- Tomato Mosaic Virus
+- Tomato Healthy
+
+---
 
 ## Prerequisites
 
-- **Docker Desktop** - For running PostgreSQL and Redis containers
+Before running the application, ensure you have:
+
+- **Docker Desktop** - For PostgreSQL and Redis containers
 - **Node.js 18+** - For frontend development
 - **Python 3.11+** - For backend development
-- **Expo Go app** - On your mobile device (iOS/Android)
+- **Expo Go app** - On your mobile device (iOS/Android) for testing
 - **Git** - For version control
+- **Kaggle account** (optional) - For training models with free GPU
+
+---
 
 ## Quick Start
 
-### 1. Start Database and Redis
+### 1. Clone Repository
+```bash
+git clone https://github.com/mahafaraja/Aggriscan.git
+cd Aggriscan
+```
+
+### 2. Start Database and Redis
 ```bash
 docker-compose up -d db redis
 ```
 
-### 2. Start Backend
+### 3. Start Backend
 ```bash
 cd backend
 python -m venv .venv
@@ -131,23 +473,25 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 3. Start Frontend
+### 4. Start Frontend
 ```bash
 cd frontend
 npm install
 npx expo start
 ```
 
-### 4. Run on Device
-- Open Expo Go app on your phone
-- Scan the QR code displayed in terminal
-- App will load and connect to backend at `http://localhost:8000`
+### 5. Run on Device
+- Install **Expo Go** from App Store/Play Store
+- Scan QR code from terminal
+- App loads and connects to backend
+
+---
 
 ## Detailed Setup Guide
 
 ### 1. Database and Redis Setup
 
-The application uses PostgreSQL with PostGIS extension for geospatial data and Redis for caching.
+The application uses PostgreSQL with PostGIS for geospatial data and Redis for caching.
 
 **Start containers:**
 ```bash
@@ -236,13 +580,12 @@ npm install
 ```
 
 **Configure API endpoint:**
-The API URL is configured in `src/config/api.ts`.
-For local development, the default is:
+The API URL is configured in `src/config/api.ts`. For local development:
 ```bash
 EXPO_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
 
-For a hosted backend, set:
+For a hosted backend:
 ```bash
 EXPO_PUBLIC_API_BASE_URL=https://your-backend-url
 ```
@@ -257,30 +600,6 @@ npx expo start
 - `npx expo start --android` - Start with Android emulator
 - `npx expo start --ios` - Start with iOS simulator
 - `npx expo start --web` - Start web version
-
-### 4. Build and Share the Android App
-
-For a quick demo build, use Expo EAS:
-
-```bash
-cd frontend
-npm install -g eas-cli
-eas login
-eas build --platform android --profile preview
-```
-
-Once the build completes, Expo will provide a link to install the app on an Android device or emulator.
-
-**How to use the Expo build link:**
-1. Open the build link on your phone or emulator.
-2. Tap the install button.
-3. Allow installation if Android asks for permission.
-4. The app will appear in the app drawer like a normal installed app.
-
-**Notes:**
-- Preview builds are great for demos and testing.
-- Production builds are recommended for wider distribution.
-- The app is installed from the Expo build link, not from a local file in the project folder.
 
 **TypeScript checking:**
 ```bash
@@ -330,6 +649,143 @@ docker-compose down
 ```bash
 docker-compose down -v
 ```
+
+---
+
+## Testing
+
+### Backend Testing
+
+The backend uses **pytest** for testing.
+
+**Run all tests:**
+```bash
+cd backend
+pytest
+```
+
+**Run specific test file:**
+```bash
+pytest tests/test_sms_auth.py
+```
+
+**Run with verbose output:**
+```bash
+pytest -v
+```
+
+**Current Test Coverage:**
+- SMS authentication flow
+- Phone number format validation
+- OTP verification
+
+**Example Test:**
+```python
+# backend/tests/test_sms_auth.py
+def test_demo_otp_accepts_common_uganda_phone_formats():
+    service = SMSService()
+    
+    assert service.verify_code('+256762000000', '123456') is True
+    assert service.verify_code('0762000000', '123456') is True
+    assert service.verify_code('256762000000', '123456') is True
+```
+
+### Frontend Testing
+
+The frontend currently uses **TypeScript** for type checking. No unit tests are implemented yet.
+
+**Type checking:**
+```bash
+cd frontend
+npx tsc --noEmit
+```
+
+**Recommended testing tools to add:**
+- **Jest** - Unit testing framework
+- **React Native Testing Library** - Component testing
+- **Detox** - End-to-end testing
+
+### ML Model Testing
+
+**Test inference:**
+```bash
+cd backend
+python test_inference.py
+```
+
+**Expected output:**
+```json
+{
+  "crop_type": "Cassava",
+  "disease_label": "Cassava_CMD",
+  "confidence_score": 0.95,
+  "severity": "High",
+  "detected_raw_crop": "Cassava_CMD",
+  "model_used": "pretrained (MobileNetV2 transfer learning)"
+}
+```
+
+---
+
+## Hosting & Deployment
+
+### Expo Builds
+
+The app is built and distributed using **Expo EAS (Expo Application Services)**.
+
+**Build Profiles:**
+- **Development:** For testing during development
+- **Preview:** For internal testing and demos
+- **Production:** For app store distribution
+
+**Build Links:**
+All builds are managed through Expo's build service. Build links are shared privately with team members and stakeholders for testing.
+
+**To create a build:**
+```bash
+cd frontend
+npm install -g eas-cli
+eas login
+eas build --platform android --profile preview
+eas build --platform ios --profile preview
+```
+
+**Note:** Build links are distributed privately to maintain security and control over app distribution.
+
+### Backend Hosting
+
+The backend can be deployed to various platforms:
+
+#### Option 1: Render (Recommended)
+- Uses `render.yaml` configuration
+- Automatic deployments from GitHub
+- Free tier available for testing
+
+**Deployment:**
+1. Connect GitHub repository to Render
+2. Render automatically detects `render.yaml`
+3. Deploys backend with PostgreSQL
+
+#### Option 2: Railway
+- Simple deployment from GitHub
+- PostgreSQL included
+- $5/month hobby plan
+
+#### Option 3: AWS/GCP/Azure
+- More control and scalability
+- Requires infrastructure setup
+- Suitable for production with high traffic
+
+### Database Hosting
+
+- **Development:** Docker containers (local)
+- **Production:** 
+  - Render PostgreSQL (included with backend)
+  - AWS RDS
+  - Google Cloud SQL
+  - Supabase (PostgreSQL with extras)
+
+---
 
 ## API Documentation
 
@@ -452,206 +908,41 @@ GET /api/v1/reports/hotspots?radius_meters=2000&threshold_count=5
 Authorization: Bearer <token>
 ```
 
-## SMS Authentication
-
-The application supports SMS-based authentication for phone number verification.
-
-### Configuration
-
-Set the following environment variables in `backend/.env`:
-
-```env
-SMS_PROVIDER=mock  # Options: mock, africastalking, twilio
-
-# For Africa's Talking
-AFRICASTALKING_API_KEY=your-api-key
-AFRICASTALKING_USERNAME=your-username
-
-# For Twilio
-TWILIO_ACCOUNT_SID=your-account-sid
-TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_PHONE_NUMBER=+1234567890
-```
-
-### Providers
-
-#### Mock Provider (Development)
-- Logs verification codes to console
-- No API keys required
-- Default for development
-
-#### Africa's Talking (Production)
-- Requires API key and username
-- Supports Uganda phone numbers
-- Cost-effective for African markets
-
-#### Twilio (Production)
-- Requires Account SID, Auth Token, and phone number
-- Global coverage
-- Reliable delivery
-
-### Flow
-
-1. User enters phone number in app
-2. Frontend calls `/api/v1/auth/sms/send`
-3. Backend generates 6-digit code and sends via SMS
-4. User enters received code
-5. Frontend calls `/api/v1/auth/sms/verify`
-6. Backend verifies code and issues JWT token
-7. User is authenticated and can access protected endpoints
-
-### Demo/Test Credentials
-
-For demo purposes without using paid SMS services, use these test credentials:
-
-- **Phone Number:** `+256762000000`
-- **Verification Code:** `123456`
-
-These credentials are hardcoded in the SMS service for development and demo purposes. In production, remove this bypass and use actual SMS providers.
-
-## Crop Detection Model
-
-The application uses a TensorFlow Lite model for crop disease detection.
-
-### Supported Crops
-
-The model can detect 8 crop types:
-- Banana
-- Bean
-- Cassava
-- Coffee
-- Corn
-- Groundnuts
-- Potato
-- Tomato
-
-### Disease Mapping
-
-Each crop has specific disease mappings (16 total disease classes):
-- **Banana**: BBW (Bacterial Wilt), Black Sigatoka, Healthy
-- **Bean**: Angular Leaf Spot, Rust, Healthy
-- **Cassava**: Bacterial Blight, Brown Spot, CMD (Mosaic), Green Mottle, Healthy
-- **Coffee**: Rust, Healthy
-- **Corn**: Common Rust, Gray Leaf Spot, Northern Leaf Blight, Healthy
-- **Groundnuts**: Early Leaf Spot, Late Leaf Spot, Healthy
-- **Potato**: Early Blight, Late Blight, Healthy
-- **Tomato**: Bacterial Spot, Early Blight, Late Blight, Leaf Mold, Septoria Leaf Spot, Spider Mites, Target Spot, Yellow Leaf Curl Virus, Mosaic Virus, Healthy
-
-### Model Training
-
-**Current Status**: The model needs to be trained with real crop images for accurate detection.
-
-**Training Options**:
-
-#### Option 1: Train on Kaggle (Recommended - Free GPU)
-See **[KAGGLE_TRAINING_GUIDE.md](KAGGLE_TRAINING_GUIDE.md)** for step-by-step instructions.
-
-**Benefits**:
-- Free GPU (Tesla P100/P4)
-- No local GPU required
-- PlantVillage dataset pre-loaded
-- Training time: 30-60 minutes
-- Cost: $0
-
-**Steps**:
-1. Create Kaggle account
-2. Create new notebook with GPU enabled
-3. Add PlantVillage dataset
-4. Run training code
-5. Download trained model (~14 MB)
-6. Deploy to `backend/app/model_assets/pretrained/`
-
-#### Option 2: Train Locally
-See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for detailed instructions.
-
-**Requirements**:
-- GPU recommended (30-60 min training)
-- 2.3 GB dataset download
-- TensorFlow 2.10+
-
-#### Option 3: Use Pre-trained Model
-If you have a pre-trained TFLite model:
-```bash
-mkdir -p backend/app/model_assets/pretrained
-cp /path/to/your/model.tflite backend/app/model_assets/pretrained/plant_village_model.tflite
-cp /path/to/your/class_map.json backend/app/model_assets/pretrained/class_map.json
-```
-
-### Model Location
-- **Current (low accuracy)**: `backend/app/model_assets/agriscan_model.tflite`
-- **Pretrained (high accuracy)**: `backend/app/model_assets/pretrained/plant_village_model.tflite`
-- **Class Map**: `backend/app/model_assets/class_map.json`
-
-### Expected Performance
-
-| Model | Training Data | Accuracy | Size |
-|-------|--------------|----------|------|
-| Current (agriscan_model.tflite) | Synthetic (random noise) | ~10% | ~50 MB |
-| Pretrained (MobileNetV2) | Real crop images (38K+) | 95-97% | ~14 MB |
-
-### Inference Process
-
-1. Image is resized to 224x224 pixels
-2. Preprocessed and fed to TFLite model
-3. Model returns probability distribution over classes
-4. Highest probability class is selected
-5. Disease label and severity are determined
-
-### Local vs Backend Inference
-
-The frontend supports both local TFLite inference (offline) and backend API inference (online). Local inference uses the same model architecture for offline capability.
-
-### Testing the Model
-
-After training and deploying the model:
-```bash
-cd backend
-python test_inference.py
-```
-
-Expected output with pretrained model:
-```json
-{
-  "crop_type": "Cassava",
-  "disease_label": "Cassava_CMD",
-  "confidence_score": 0.95,
-  "severity": "High",
-  "detected_raw_crop": "Cassava_CMD",
-  "model_used": "pretrained (MobileNetV2 transfer learning)"
-}
-```
-
-## Screen Flow
-
-The application follows this screen flow:
-
-1. **Get Started Screen** - Welcome screen with "Welcome Samin!" message and "Get Start" button
-2. **Home Screen** - Main dashboard with scan options and statistics
-3. **Camera Screen** - Camera interface for live leaf scanning
-4. **Add Photo Screen** - Gallery photo selection for diagnosis
-5. **Scan Result Screen** - Displays disease detection results
-6. **Treatment & Prevention Screen** - Shows treatment guidance (if diseased)
-7. **Healthy Screen** - Confirmation screen for healthy leaves
+---
 
 ## Environment Variables
 
 ### Backend (.env)
 ```env
+# Database
 DATABASE_URL=postgresql://postgres:postgrespassword@localhost:5432/agriscan
+
+# Security
 SECRET_KEY=your-secret-key-here
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
-SMS_PROVIDER=mock
-AFRICASTALKING_API_KEY=
-AFRICASTALKING_USERNAME=
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
-TWILIO_PHONE_NUMBER=
+
+# SMS Configuration
+SMS_PROVIDER=mock  # Options: mock, africastalking, twilio, firebase
+
+# Africa's Talking
+AFRICASTALKING_API_KEY=your-api-key
+AFRICASTALKING_USERNAME=your-username
+
+# Twilio
+TWILIO_ACCOUNT_SID=your-account-sid
+TWILIO_AUTH_TOKEN=your-auth-token
+TWILIO_PHONE_NUMBER=+1234567890
+
+# Firebase (optional)
+FIREBASE_CREDENTIALS_PATH=./app/services/config/firebase_sms.json
 ```
 
 ### Frontend
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
+
+---
 
 ## Troubleshooting
 
@@ -674,8 +965,8 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:8000
 
 **Low model accuracy (~10%):**
 - The current model was trained on synthetic data
-- Train a new model using Kaggle (see KAGGLE_TRAINING_GUIDE.md)
-- Or use a pre-trained model (see SETUP_GUIDE.md)
+- Train a new model using Kaggle (see training guide above)
+- Or use a pre-trained PlantVillage model
 
 ### Frontend Issues
 
@@ -712,5 +1003,73 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:8000
 
 **Code verification fails:**
 - Ensure correct code entered
-- Check code hasn't expired
+- Check code hasn't expired (5 minutes)
 - Verify phone number format (+256...)
+
+---
+
+## Citation
+
+If you use this project or its components in your research or application, please cite:
+
+### Project Citation
+```bibtex
+@misc{agriscan2024,
+  title={Agriscan: A Mobile Application for Plant Disease Detection Using Deep Learning},
+  author={Majer, Jacob and Maha, Faraja and Ochieng, Richard and Masereka, Landus and Mugisa, Alvin and Wakalanga, Denis Rogers and Mole, Rebecca Pemba},
+  year={2024},
+  publisher={Victoria University},
+  note={Final Year Project}
+}
+```
+
+### Dataset Citation
+```bibtex
+@article{hughes2015open,
+  title={An open access repository of images on plant health to enable the development of mobile disease diagnostics},
+  author={Hughes, David P and Salath{\'e}, Marcel},
+  journal={arXiv preprint arXiv:1511.08060},
+  year={2015}
+}
+```
+
+### Model Citation
+```bibtex
+@misc{sandler2018mobilenetv2,
+  title={MobileNetV2: Inverted Residuals and Linear Bottlenecks},
+  author={Sandler, Mark and Howard, Andrew and Zhu, Menglong and Zhmoginov, Andrey and Chen, Liang-Chieh},
+  year={2018},
+  eprint={1801.04381},
+  archivePrefix={arXiv},
+  url={https://arxiv.org/abs/1801.04381}
+}
+```
+
+---
+
+## License
+
+This project is developed as a final year project at Victoria University. All rights reserved.
+
+---
+
+## Contact
+
+For questions, feedback, or collaboration inquiries, please contact the project team through Victoria University's computer science department.
+
+**Supervisor:** Bazigu Alex  
+**Institution:** Victoria University
+
+---
+
+## Acknowledgments
+
+- **PlantVillage Dataset** - For providing the crop disease image dataset
+- **Victoria University** - For supervision and resources
+- **Uganda Farmers** - For domain knowledge and requirements
+- **Open Source Community** - For the amazing tools and libraries
+
+---
+
+**Last Updated:** July 2024  
+**Version:** 1.0.0
