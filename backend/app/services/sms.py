@@ -205,8 +205,27 @@ class SMSService:
             )
             
             if response.status_code == 200:
-                logger.info(f"YoolaSMS sent successfully to {phone_number}")
-                return True
+                # Check if the response indicates success
+                try:
+                    response_data = response.json()
+                    logger.info(f"YoolaSMS response: {response_data}")
+                    
+                    # Check for success indicators in response
+                    # Adjust these checks based on actual YoolaSMS API response format
+                    if response_data.get('status') == 'success' or \
+                       response_data.get('success') == True or \
+                       response_data.get('code') == '200' or \
+                       response_data.get('message', '').lower().find('success') != -1:
+                        logger.info(f"YoolaSMS sent successfully to {phone_number}")
+                        return True
+                    else:
+                        logger.error(f"YoolaSMS returned error in response: {response_data}")
+                        return False
+                except Exception as parse_error:
+                    # If we can't parse JSON, assume success if status is 200
+                    logger.warning(f"Could not parse YoolaSMS response: {parse_error}, assuming success")
+                    logger.info(f"YoolaSMS sent successfully to {phone_number}")
+                    return True
             else:
                 logger.error(f"YoolaSMS error {response.status_code}: {response.text}")
                 return False
