@@ -41,8 +41,11 @@ def is_demo_phone_number(phone_number: str) -> bool:
 
 class SMSService:
     def __init__(self):
-        self.provider = settings.SMS_PROVIDER
         self.verification_codes = {}  # In-memory storage for demo (use Redis in production)
+
+    @property
+    def provider(self) -> str:
+        return settings.SMS_PROVIDER
     
     def generate_verification_code(self, phone_number: str) -> str:
         """Generate a 6-digit verification code"""
@@ -52,18 +55,30 @@ class SMSService:
             'code': code,
             'expires_at': None  # Add expiration logic if needed
         }
-        logger.info(f"Generated verification code for {phone_number} ({normalized_phone}): {code}")
+        logger.info("Generated verification code for %s (%s)", phone_number, normalized_phone)
         return code
     
     def send_verification_code(self, phone_number: str, message: str, recaptcha_token: Optional[str] = None) -> bool:
         """Send SMS verification code based on configured provider with retry logic"""
         code = self.generate_verification_code(phone_number)
+        provider = self.provider
+
+        logger.info(
+            "SMS send requested provider=%s recipient=%s provider_ready=%s",
+            provider,
+            normalize_phone_number(phone_number),
+            settings.sms_provider_ready(),
+        )
         
-        if self.provider == "mock":
+        if provider == "mock":
             # Mock provider for development - logs to console
             logger.info(f"[MOCK SMS] To: {phone_number}, Message: {message} {code}")
             print(f"[MOCK SMS] Verification code for {phone_number}: {code}")
             return True
+
+        if not settings.sms_provider_ready():
+            logger.error("SMS provider %s is selected but required credentials are missing", provider)
+            raise Exception("SMS service configuration error. Please contact support if this persists.")
         
         # Retry logic for real SMS providers
         last_error = None
@@ -71,17 +86,17 @@ class SMSService:
             try:
                 logger.info(f"Attempting to send SMS to {phone_number} (attempt {attempt}/{MAX_RETRIES})")
                 
-                if self.provider == "africastalking":
+                if provider == "africastalking":
                     result = self._send_africastalking(phone_number, f"{message} {code}")
-                elif self.provider == "twilio":
+                elif provider == "twilio":
                     result = self._send_twilio(phone_number, f"{message} {code}")
-                elif self.provider == "firebase":
+                elif provider == "firebase":
                     firebase_service = get_firebase_sms_service()
                     result = firebase_service.send_verification_code(phone_number, f"{message} {code}", recaptcha_token=recaptcha_token)
-                elif self.provider == "yoola":
+                elif provider == "yoola":
                     result = self._send_yoola(phone_number, f"{message} {code}")
                 else:
-                    logger.error(f"Unknown SMS provider: {self.provider}")
+                    logger.error(f"Unknown SMS provider: {provider}")
                     return False
                 
                 if result:

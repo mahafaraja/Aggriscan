@@ -11,11 +11,15 @@ import os
 import base64
 import json
 import requests
+import logging
 from typing import Dict, Any, Optional, List
 from PIL import Image
 import io
 from datetime import datetime
 from .inference import get_inference_service
+from ..config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class ImageValidationService:
@@ -130,10 +134,17 @@ class PlantIdentificationService:
         self.gemini_api_key = gemini_api_key
         self.plantid_api_key = plantid_api_key
         self.plantnet_api_key = plantnet_api_key
+        self.enabled = bool(gemini_api_key)
         
-        self.gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}"
+        self.gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}" if gemini_api_key else None
         self.plantid_url = "https://api.plant.id/identify"
         self.plantnet_url = "https://my-api.plantnet.org/v2/identify/all"
+        logger.info(
+            "Plant identification service initialized gemini_configured=%s plantid_configured=%s plantnet_configured=%s",
+            bool(gemini_api_key),
+            bool(plantid_api_key),
+            bool(plantnet_api_key),
+        )
     
     def _encode_image(self, image_path: str) -> str:
         """Encode image to base64"""
@@ -145,6 +156,7 @@ class PlantIdentificationService:
         try:
             # If Gemini not enabled, return failure immediately
             if not self.enabled or not self.gemini_url:
+                logger.warning("Gemini identification skipped because GEMINI_API_KEY is not configured")
                 return {"success": False, "error": "Gemini API key not configured", "service": "gemini"}
 
             base64_image = self._encode_image(image_path)
@@ -184,6 +196,7 @@ class PlantIdentificationService:
             )
             
             if response.status_code != 200:
+                logger.error("Gemini identification failed with status=%s body=%s", response.status_code, response.text[:500])
                 return {"success": False, "error": f"Gemini API error: {response.status_code}"}
             
             result = response.json()
@@ -203,11 +216,13 @@ class PlantIdentificationService:
             return {"success": False, "error": "Could not parse Gemini response"}
             
         except Exception as e:
+            logger.exception("Gemini identification failed")
             return {"success": False, "error": str(e), "service": "gemini"}
     
     def identify_with_plantid(self, image_path: str) -> Dict[str, Any]:
         """Fallback identification using PlantID API"""
         if not self.plantid_api_key or self.plantid_api_key == "your_plantid_api_key_here":
+            logger.info("PlantID skipped because PLANTID_API_KEY is not configured")
             return {"success": False, "error": "PlantID API key not configured", "service": "plantid"}
         
         try:
@@ -250,11 +265,13 @@ class PlantIdentificationService:
                 return {"success": False, "error": "No plant identified by PlantID", "service": "plantid"}
                 
         except Exception as e:
+            logger.exception("PlantID identification failed")
             return {"success": False, "error": str(e), "service": "plantid"}
     
     def identify_with_plantnet(self, image_path: str) -> Dict[str, Any]:
         """Fallback identification using PlantNet API"""
         if not self.plantnet_api_key or self.plantnet_api_key == "your_plantnet_api_key_here":
+            logger.info("PlantNet skipped because PLANTNET_API_KEY is not configured")
             return {"success": False, "error": "PlantNet API key not configured", "service": "plantnet"}
         
         try:
@@ -297,6 +314,7 @@ class PlantIdentificationService:
                 return {"success": False, "error": "No plant identified by PlantNet", "service": "plantnet"}
                 
         except Exception as e:
+            logger.exception("PlantNet identification failed")
             return {"success": False, "error": str(e), "service": "plantnet"}
     
     def identify_plant(self, image_path: str) -> Dict[str, Any]:
@@ -309,6 +327,7 @@ class PlantIdentificationService:
         # Try primary service (Gemini)
         result = self.identify_with_gemini(image_path)
         if result.get('success'):
+            logger.info("Plant identification succeeded using Gemini")
             return {
                 "success": True,
                 "plant_data": result['data'],
@@ -319,6 +338,7 @@ class PlantIdentificationService:
         # Try fallback 1 (PlantID)
         result = self.identify_with_plantid(image_path)
         if result.get('success'):
+            logger.info("Plant identification succeeded using PlantID fallback")
             return {
                 "success": True,
                 "plant_data": result['data'],
@@ -330,6 +350,7 @@ class PlantIdentificationService:
         # Try fallback 2 (PlantNet)
         result = self.identify_with_plantnet(image_path)
         if result.get('success'):
+            logger.info("Plant identification succeeded using PlantNet fallback")
             return {
                 "success": True,
                 "plant_data": result['data'],
@@ -342,6 +363,7 @@ class PlantIdentificationService:
         try:
             local_service = get_inference_service()
             pred = local_service.predict_crop(image_path)
+            logger.info("Plant identification using local model fallback: %s", pred)
             # Build a minimal plant_data structure from the model prediction
             plant_data = {
                 "plant_name": pred.get('crop_type', 'Unknown'),
@@ -360,7 +382,7 @@ class PlantIdentificationService:
             }
         except Exception as e:
             # If local inference also fails, continue to final failure
-            pass
+            logger.exception("Local model identification fallback failed")
         
         # All services failed
         return {
@@ -687,7 +709,7 @@ _pdf_report_generator = None
 def get_image_validation_service() -> ImageValidationService:
     global _image_validation_service
     if _image_validation_service is None:
-        gemini_key = os.getenv("GEMINI_API_KEY", "")
+        gemini_key = settings.GEMINI_API_KEY
         _image_validation_service = ImageValidationService(gemini_key)
     return _image_validation_service
 
@@ -695,9 +717,9 @@ def get_image_validation_service() -> ImageValidationService:
 def get_plant_identification_service() -> PlantIdentificationService:
     global _plant_identification_service
     if _plant_identification_service is None:
-        gemini_key = os.getenv("GEMINI_API_KEY", "")
-        plantid_key = os.getenv("PLANTID_API_KEY", "")
-        plantnet_key = os.getenv("PLANTNET_API_KEY", "")
+        gemini_key = settings.GEMINI_API_KEY
+        plantid_key = settings.PLANTID_API_KEY
+        plantnet_key = settings.PLANTNET_API_KEY
         _plant_identification_service = PlantIdentificationService(gemini_key, plantid_key, plantnet_key)
     return _plant_identification_service
 
@@ -705,7 +727,7 @@ def get_plant_identification_service() -> PlantIdentificationService:
 def get_care_recommendation_service() -> CareRecommendationService:
     global _care_recommendation_service
     if _care_recommendation_service is None:
-        gemini_key = os.getenv("GEMINI_API_KEY", "")
+        gemini_key = settings.GEMINI_API_KEY
         _care_recommendation_service = CareRecommendationService(gemini_key)
     return _care_recommendation_service
 

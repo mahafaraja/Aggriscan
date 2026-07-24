@@ -1,14 +1,18 @@
 import os
 import json
+import logging
 import numpy as np
 from PIL import Image
 import tensorflow as tf
+
+logger = logging.getLogger(__name__)
 
 class CropInferenceService:
     def __init__(self):
         # Determine path to assets relative to this file
         current_dir = os.path.dirname(os.path.abspath(__file__))
         self.model_dir = os.path.join(os.path.dirname(current_dir), "model_assets")
+        logger.info("Initializing CropInferenceService model_dir=%s exists=%s", self.model_dir, os.path.isdir(self.model_dir))
         
         # Model paths
         self.gatekeeper_model_path = os.path.join(self.model_dir, "mobilenetv2_crop_gatekeeper.tflite")
@@ -25,6 +29,48 @@ class CropInferenceService:
             "potato": os.path.join(self.model_dir, "potato_disease_expert.tflite"),
             "tomato": os.path.join(self.model_dir, "tomato_disease_expert.tflite"),
         }
+        self.crop_aliases = {
+            "corn": "maize",
+        }
+        self.fallback_disease_class_maps = {
+            "banana": {
+                "0": "Banana_Healthy",
+                "1": "Banana_Black_Sigatoka",
+                "2": "Banana_Pestalotiopsis",
+                "3": "Banana_Cordana",
+            },
+            "bean": {
+                "0": "Bean_Healthy",
+                "1": "Bean_Angular_Leaf_Spot",
+                "2": "Bean_Anthracnose",
+                "3": "Bean_Rust",
+            },
+            "cassava": {
+                "0": "Cassava_Healthy",
+                "1": "Cassava_CMD",
+                "2": "Cassava_Brown_Streak",
+                "3": "Cassava_Green_Mottle",
+                "4": "Cassava_Bacterial_Blight",
+            },
+            "groundnuts": {
+                "0": "Groundnuts_Healthy",
+                "1": "Groundnuts_Early_Rust",
+                "2": "Groundnuts_Late_Rust",
+                "3": "Groundnuts_Early_Spot",
+                "4": "Groundnuts_Late_Spot",
+            },
+            "potato": {
+                "0": "Potato_Healthy",
+                "1": "Potato_Late_Blight",
+                "2": "Potato_Brown_Streak",
+            },
+            "tomato": {
+                "0": "Tomato_Healthy",
+                "1": "Tomato_Early_Blight",
+                "2": "Tomato_Late_Blight",
+                "3": "Tomato_Leaf_Mold",
+            },
+        }
         
         # Load gatekeeper model for crop type detection (primary)
         self.gatekeeper_interpreter = None
@@ -32,7 +78,9 @@ class CropInferenceService:
         if os.path.exists(self.gatekeeper_model_path):
             self.gatekeeper_interpreter = self._load_model(self.gatekeeper_model_path)
             self.gatekeeper_class_map = self._load_class_map(os.path.join(self.model_dir, "class_map.json"))
-            print(f"✅ Gatekeeper model loaded: mobilenetv2_crop_gatekeeper.tflite")
+            logger.info("Gatekeeper model loaded: mobilenetv2_crop_gatekeeper.tflite class_map_loaded=%s", bool(self.gatekeeper_class_map))
+        else:
+            logger.warning("Gatekeeper model missing: %s", self.gatekeeper_model_path)
         
         # Load agriscan model as final fallback
         self.agriscan_interpreter = None
@@ -40,16 +88,27 @@ class CropInferenceService:
         if os.path.exists(self.agriscan_model_path):
             self.agriscan_interpreter = self._load_model(self.agriscan_model_path)
             self.agriscan_class_map = self._load_class_map(os.path.join(self.model_dir, "class_map.json"))
-            print(f"✅ Fallback model loaded: agriscan_model.tflite")
+            logger.info("Fallback model loaded: agriscan_model.tflite class_map_loaded=%s", bool(self.agriscan_class_map))
+        else:
+            logger.warning("Fallback model missing: %s", self.agriscan_model_path)
         
         # Cache for loaded disease expert models
         self.disease_model_cache = {}
         
-        print(f"✅ CropInferenceService initialized with {len(self.disease_expert_models)} disease expert models")
+        available_experts = [
+            crop for crop, path in self.disease_expert_models.items()
+            if os.path.exists(path)
+        ]
+        logger.info(
+            "CropInferenceService initialized disease_expert_count=%s available_experts=%s",
+            len(self.disease_expert_models),
+            available_experts,
+        )
 
     def _load_model(self, model_path: str):
         """Load a TFLite model and allocate tensors"""
         if not os.path.exists(model_path):
+            logger.warning("TFLite model file not found: %s", model_path)
             return None
         interpreter = tf.lite.Interpreter(model_path=model_path)
         interpreter.allocate_tensors()
@@ -61,6 +120,23 @@ class CropInferenceService:
             return None
         with open(class_map_path, "r") as f:
             return json.load(f)
+
+    def _normalize_crop_type(self, crop_type: str) -> str:
+        normalized = crop_type.lower().strip()
+        return self.crop_aliases.get(normalized, normalized)
+
+    def _class_map_for_crop(self, crop_type: str):
+        if crop_type == "coffee":
+            class_map_path = os.path.join(self.model_dir, "coffe_model", "class_map.json")
+            if os.path.exists(class_map_path):
+                return self._load_class_map(class_map_path)
+
+        if crop_type == "maize":
+            class_map_path = os.path.join(self.model_dir, "maize_model", "class_map.json")
+            if os.path.exists(class_map_path):
+                return self._load_class_map(class_map_path)
+
+        return self.fallback_disease_class_maps.get(crop_type)
     
     def _preprocess_image(self, image_path: str, input_shape):
         """Load and preprocess image for inference"""
@@ -104,6 +180,7 @@ class CropInferenceService:
                 
                 # Extract crop type (e.g., "Tomato___Early_Blight" -> "Tomato")
                 crop_type = crop_name.split("_")[0] if "_" in crop_name else crop_name
+                crop_type = self._normalize_crop_type(crop_type)
                 
                 # Try to use disease expert model for this crop
                 disease_result = self._predict_with_disease_expert(image_path, crop_type.lower())
@@ -123,7 +200,7 @@ class CropInferenceService:
                     "model_used": "mobilenetv2_crop_gatekeeper"
                 }
             except Exception as e:
-                print(f"Gatekeeper model failed: {e}")
+                logger.exception("Gatekeeper model failed")
         
         # Strategy 2: Fallback to agriscan model
         if self.agriscan_interpreter and self.agriscan_class_map:
@@ -168,7 +245,7 @@ class CropInferenceService:
                     "model_used": "agriscan_model (fallback)"
                 }
             except Exception as e:
-                print(f"Agriscan model failed: {e}")
+                logger.exception("Agriscan fallback model failed")
         
         # Ultimate fallback
         return {
@@ -184,8 +261,10 @@ class CropInferenceService:
         """
         Use crop-specific disease expert model if available
         """
+        crop_type = self._normalize_crop_type(crop_type)
         model_path = self.disease_expert_models.get(crop_type)
         if not model_path or not os.path.exists(model_path):
+            logger.info("No disease expert model available for crop_type=%s path=%s", crop_type, model_path)
             return None
         
         # Load model if not cached
@@ -194,23 +273,11 @@ class CropInferenceService:
             if not interpreter:
                 return None
             
-            # Load crop-specific class map
-            class_map_path = None
-            if crop_type == "coffee":
-                class_map_path = os.path.join(self.model_dir, "coffe_model", "class_map.json")
-            elif crop_type == "maize":
-                # Try maize_disease_expert first, fallback to maize_model
-                maize_expert_map = os.path.join(self.model_dir, "maize_disease_expert.tflite")
-                if os.path.exists(maize_expert_map):
-                    # maize_disease_expert uses same class map as maize_model
-                    class_map_path = os.path.join(self.model_dir, "maize_model", "class_map.json")
-                else:
-                    class_map_path = os.path.join(self.model_dir, "maize_model", "class_map.json")
-            
-            if not class_map_path or not os.path.exists(class_map_path):
+            class_map = self._class_map_for_crop(crop_type)
+            if not class_map:
+                logger.warning("Disease expert class map missing for crop_type=%s", crop_type)
                 return None
             
-            class_map = self._load_class_map(class_map_path)
             self.disease_model_cache[crop_type] = {
                 'interpreter': interpreter,
                 'class_map': class_map
@@ -220,7 +287,7 @@ class CropInferenceService:
             cached = self.disease_model_cache[crop_type]
             img_array = self._preprocess_image(image_path, cached['interpreter'].get_input_details()[0]['shape'])
             pred_idx, confidence = self._run_inference(cached['interpreter'], img_array)
-            disease_label = cached['class_map'][str(pred_idx)]
+            disease_label = cached['class_map'].get(str(pred_idx), f"{crop_type.capitalize()}_Disease_Class_{pred_idx}")
             
             # Determine severity
             if "Healthy" in disease_label:
@@ -241,7 +308,7 @@ class CropInferenceService:
                 "model_used": f"{crop_type}_disease_expert"
             }
         except Exception as e:
-            print(f"Disease expert model failed for {crop_type}: {e}")
+            logger.exception("Disease expert model failed for crop_type=%s", crop_type)
             return None
 
 # Singleton instance
