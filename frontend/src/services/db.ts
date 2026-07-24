@@ -73,10 +73,10 @@ export const saveOfflineReport = async (report: Omit<LocalReport, 'sync_status'>
 export const getPendingReports = async (): Promise<LocalReport[]> => {
   try {
     const db = getDB();
-    const result = db.getFirstSync<LocalReport>(
+    const result = db.getAllSync<LocalReport>(
       `SELECT * FROM local_reports WHERE sync_status = 'PENDING' ORDER BY offline_created_at DESC;`
     );
-    return result ? [result] : [];
+    return result || [];
   } catch (error) {
     console.error("SQLite read pending error:", error);
     throw error;

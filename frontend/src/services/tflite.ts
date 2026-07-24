@@ -64,7 +64,6 @@ export class TFLiteModelService {
         body: formData,
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'multipart/form-data',
         },
       });
 

@@ -2,7 +2,7 @@ import { API_BASE_URL } from '../config/api';
 import { CropType } from '../types/scan';
 
 export interface BackendPredictionResponse {
-  crop_type: CropType;
+  crop_type: CropType | string;
   disease_label: string;
   confidence_score: number;
   severity: string;
@@ -108,9 +108,6 @@ export async function diagnoseImageWithBackend(imageUri: string): Promise<Backen
   try {
     const response = await fetch(`${API_BASE_URL}/api/v1/reports/diagnose`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
       body: formData,
     });
 
@@ -142,9 +139,6 @@ export async function analyzePlantWithBackend(imageUri: string): Promise<PlantAn
   try {
     const response = await fetch(`${API_BASE_URL}/api/v1/reports/analyze-plant`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
       body: formData,
     });
 

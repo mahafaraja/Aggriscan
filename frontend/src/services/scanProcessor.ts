@@ -1,12 +1,25 @@
 import { saveOfflineReport } from './db';
 import { analyzePlantWithBackend, diagnoseImageWithBackend } from './backendApi';
-import { ScanPayload, PlantAnalysisResponse } from '../types/scan';
+import { CropType, ScanPayload } from '../types/scan';
 
 type ProcessScanInput = {
   imageUri: string;
   latitude: number;
   longitude: number;
 };
+
+function normalizeCropType(value?: string): CropType {
+  const normalized = (value || '').toLowerCase();
+
+  if (normalized.includes('cassava')) return 'Cassava';
+  if (normalized.includes('bean')) return 'Bean';
+  if (normalized.includes('coffee')) return 'Coffee';
+  if (normalized.includes('corn') || normalized.includes('maize')) return 'Corn';
+  if (normalized.includes('groundnut') || normalized.includes('peanut')) return 'Groundnuts';
+  if (normalized.includes('potato')) return 'Potato';
+  if (normalized.includes('tomato')) return 'Tomato';
+  return 'Banana';
+}
 
 export async function processScanImage({
   imageUri,
@@ -17,22 +30,13 @@ export async function processScanImage({
     // Try the new Green-Sense plant analysis endpoint first
     const analysisResponse = await analyzePlantWithBackend(imageUri);
     
-    if (analysisResponse.image_validated && analysisResponse.plant_identified) {
+    if (analysisResponse.plant_identified) {
       // Successfully analyzed with Green-Sense
       const plantData = analysisResponse.plant_identification.plant_data;
       const summary = analysisResponse.summary;
       
       // Map plant name to crop type
-      const plantNameLower = plantData.plant_name.toLowerCase();
-      let cropType: 'Cassava' | 'Banana' | 'Bean' | 'Coffee' | 'Corn' | 'Groundnuts' | 'Potato' | 'Tomato' = 'Banana';
-      
-      if (plantNameLower.includes('cassava')) cropType = 'Cassava';
-      else if (plantNameLower.includes('bean')) cropType = 'Bean';
-      else if (plantNameLower.includes('coffee')) cropType = 'Coffee';
-      else if (plantNameLower.includes('corn') || plantNameLower.includes('maize')) cropType = 'Corn';
-      else if (plantNameLower.includes('groundnut') || plantNameLower.includes('peanut')) cropType = 'Groundnuts';
-      else if (plantNameLower.includes('potato')) cropType = 'Potato';
-      else if (plantNameLower.includes('tomato')) cropType = 'Tomato';
+      const cropType = normalizeCropType(plantData.plant_name || plantData.scientific_name);
       
       const reportId = Math.random().toString(36).substring(2, 15);
       const scannedAt = new Date().toISOString();
@@ -74,12 +78,13 @@ export async function processScanImage({
       // Fallback to old diagnosis endpoint if Green-Sense fails
       console.log('Green-Sense analysis failed, falling back to TFLite diagnosis');
       const backendPrediction = await diagnoseImageWithBackend(imageUri);
+      const cropType = normalizeCropType(backendPrediction.crop_type || backendPrediction.detected_raw_crop);
       
       const reportId = Math.random().toString(36).substring(2, 15);
       const scannedAt = new Date().toISOString();
 
       const diagnostic = {
-        crop_type: backendPrediction.crop_type,
+        crop_type: cropType,
         disease_label: backendPrediction.disease_label,
         confidence_score: backendPrediction.confidence_score,
         severity: backendPrediction.severity as 'Low' | 'Medium' | 'High',
@@ -89,7 +94,7 @@ export async function processScanImage({
 
       await saveOfflineReport({
         id: reportId,
-        crop_type: backendPrediction.crop_type,
+        crop_type: cropType,
         disease_label: backendPrediction.disease_label,
         confidence_score: backendPrediction.confidence_score,
         latitude,
@@ -103,7 +108,7 @@ export async function processScanImage({
         id: reportId,
         imageUri,
         diagnostic,
-        cropType: backendPrediction.crop_type,
+        cropType,
         latitude,
         longitude,
         scannedAt,
