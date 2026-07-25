@@ -41,10 +41,10 @@ class Settings:
     PLANTNET_API_KEY: str = _env_str("PLANTNET_API_KEY")
 
     def sms_provider_ready(self) -> bool:
-        if self.SMS_PROVIDER == "mock":
-            return True
         if self.SMS_PROVIDER == "yoola":
             return bool(self.YOLLA_SMS_API_KEY)
+        if self.SMS_PROVIDER == "mock":
+            return True
         if self.SMS_PROVIDER == "africastalking":
             return bool(self.AFRICASTALKING_API_KEY and self.AFRICASTALKING_USERNAME)
         if self.SMS_PROVIDER == "twilio":
