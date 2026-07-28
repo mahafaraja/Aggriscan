@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "expo": "~56.0.14",
     "expo-build-properties": "~56.0.21",
     "expo-camera": "~56.0.8",

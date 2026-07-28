@@ -19,20 +19,20 @@ CREATE TABLE users (
 CREATE TABLE reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    crop_type VARCHAR(50) NOT NULL CHECK (crop_type IN ('Cassava', 'Banana')),
+    crop_type VARCHAR(50) NOT NULL,
     disease_label VARCHAR(100) NOT NULL,
     confidence_score NUMERIC(5, 4) NOT NULL CHECK (confidence_score BETWEEN 0.0 AND 1.0),
-    location GEOMETRY(Point, 4326) NOT NULL,
+    latitude NUMERIC(9, 6) NOT NULL,
+    longitude NUMERIC(9, 6) NOT NULL,
     image_url VARCHAR(512),
     severity VARCHAR(50) NOT NULL CHECK (severity IN ('Low', 'Medium', 'High')),
     offline_created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     server_received_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create Spatial Index (GIST) for rapid geographic querying
-CREATE INDEX idx_reports_location ON reports USING GIST (location);
-
--- Create standard index for filtering by crop types & disease outcomes
+-- Create spatial index using latitude/longitude for geographic querying
+CREATE INDEX idx_reports_latitude ON reports (latitude);
+CREATE INDEX idx_reports_longitude ON reports (longitude);
 CREATE INDEX idx_reports_crop_disease ON reports (crop_type, disease_label);
 
 -- Seed Default Test Accounts:
