@@ -32,7 +32,7 @@
     "render-backend": {
       "extends": "preview",
       "env": {
-        "BACKEND_URL": "https://agriscan.onrender.com"
+        "BACKEND_URL": "https://aggriscan.onrender.com"
       },
       "android": {
         "buildType": "apk"
@@ -47,7 +47,7 @@
     "render-backend-dev": {
       "extends": "development",
       "env": {
-        "BACKEND_URL": "https://agriscan.onrender.com"
+        "BACKEND_URL": "https://aggriscan.onrender.com"
       }
     }
   }
