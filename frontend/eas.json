@@ -19,6 +19,36 @@
         "buildType": "app-bundle"
       },
       "ios": {}
+    },
+    "local-backend": {
+      "extends": "preview",
+      "env": {
+        "BACKEND_URL": "http://127.0.0.1:8000"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "render-backend": {
+      "extends": "preview",
+      "env": {
+        "BACKEND_URL": "https://agriscan.onrender.com"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "local-backend-dev": {
+      "extends": "development",
+      "env": {
+        "BACKEND_URL": "http://127.0.0.1:8000"
+      }
+    },
+    "render-backend-dev": {
+      "extends": "development",
+      "env": {
+        "BACKEND_URL": "https://agriscan.onrender.com"
+      }
     }
   }
 }
