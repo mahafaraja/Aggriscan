@@ -24,6 +24,7 @@
     "iconsax-react-native": "^0.0.8",
     "react": "19.2.3",
     "react-native": "0.85.3",
+    "react-native-fast-tflite": "^0.2.0",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-svg": "15.15.4",
     "react-native-vector-icons": "^10.0.3"

@@ -1,5 +1,5 @@
 import { saveOfflineReport } from './db';
-import { analyzePlantWithBackend, diagnoseImageWithBackend } from './backendApi';
+import { FrontendInferenceService } from './frontendInference';
 import { CropType, ScanPayload } from '../types/scan';
 
 type ProcessScanInput = {
@@ -27,95 +27,49 @@ export async function processScanImage({
   longitude,
 }: ProcessScanInput): Promise<ScanPayload> {
   try {
-    // Try the new Green-Sense plant analysis endpoint first
-    const analysisResponse = await analyzePlantWithBackend(imageUri);
+    // Use new frontend-first inference service with fallback chain
+    console.log('Scan Processor: Starting frontend-first inference');
+    const inferenceService = FrontendInferenceService.getInstance();
+    const result = await inferenceService.classifyImage(imageUri);
     
-    if (analysisResponse.plant_identified) {
-      // Successfully analyzed with Green-Sense
-      const plantData = analysisResponse.plant_identification.plant_data;
-      const summary = analysisResponse.summary;
-      
-      // Map plant name to crop type
-      const cropType = normalizeCropType(plantData.plant_name || plantData.scientific_name);
-      
-      const reportId = Math.random().toString(36).substring(2, 15);
-      const scannedAt = new Date().toISOString();
+    const cropType = normalizeCropType(result.crop_type || result.detected_raw_crop);
+    const reportId = Math.random().toString(36).substring(2, 15);
+    const scannedAt = new Date().toISOString();
 
-      // Create diagnostic object compatible with existing structure
-      const diagnostic = {
-        crop_type: cropType,
-        disease_label: plantData.plant_name,
-        confidence_score: summary.confidence,
-        severity: 'Low' as const,
-        detected_raw_crop: plantData.plant_name,
-        model_used: summary.service_used,
-        // Additional Green-Sense data
-        plant_analysis: analysisResponse
-      };
+    const diagnostic = {
+      crop_type: cropType,
+      disease_label: result.disease_label,
+      confidence_score: result.confidence_score,
+      severity: result.severity as 'Low' | 'Medium' | 'High',
+      detected_raw_crop: result.detected_raw_crop,
+      green_ratio: result.green_ratio,
+      model_used: result.model_used,
+      fallback_used: result.fallback_used
+    };
 
-      await saveOfflineReport({
-        id: reportId,
-        crop_type: cropType,
-        disease_label: plantData.plant_name,
-        confidence_score: summary.confidence,
-        latitude,
-        longitude,
-        severity: 'Low',
-        offline_created_at: scannedAt,
-        image_url: imageUri,
-      });
+    await saveOfflineReport({
+      id: reportId,
+      crop_type: cropType,
+      disease_label: result.disease_label,
+      confidence_score: result.confidence_score,
+      latitude,
+      longitude,
+      severity: result.severity,
+      offline_created_at: scannedAt,
+      image_url: imageUri,
+    });
 
-      return {
-        id: reportId,
-        imageUri,
-        diagnostic,
-        cropType,
-        latitude,
-        longitude,
-        scannedAt,
-      };
-    } else {
-      // Fallback to old diagnosis endpoint if Green-Sense fails
-      console.log('Green-Sense analysis failed, falling back to TFLite diagnosis');
-      const backendPrediction = await diagnoseImageWithBackend(imageUri);
-      const cropType = normalizeCropType(backendPrediction.crop_type || backendPrediction.detected_raw_crop);
-      
-      const reportId = Math.random().toString(36).substring(2, 15);
-      const scannedAt = new Date().toISOString();
-
-      const diagnostic = {
-        crop_type: cropType,
-        disease_label: backendPrediction.disease_label,
-        confidence_score: backendPrediction.confidence_score,
-        severity: backendPrediction.severity as 'Low' | 'Medium' | 'High',
-        detected_raw_crop: backendPrediction.detected_raw_crop,
-        model_used: 'tflite-fallback'
-      };
-
-      await saveOfflineReport({
-        id: reportId,
-        crop_type: cropType,
-        disease_label: backendPrediction.disease_label,
-        confidence_score: backendPrediction.confidence_score,
-        latitude,
-        longitude,
-        severity: backendPrediction.severity,
-        offline_created_at: scannedAt,
-        image_url: imageUri,
-      });
-
-      return {
-        id: reportId,
-        imageUri,
-        diagnostic,
-        cropType,
-        latitude,
-        longitude,
-        scannedAt,
-      };
-    }
+    return {
+      id: reportId,
+      imageUri,
+      diagnostic,
+      cropType,
+      latitude,
+      longitude,
+      scannedAt,
+    };
   } catch (error) {
-    console.error('All backend analysis methods failed:', error);
+    console.error('All inference methods failed:', error);
     throw new Error('Could not process this photo. Please try another clear leaf image.');
   }
 }
