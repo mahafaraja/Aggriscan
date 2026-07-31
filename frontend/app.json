@@ -67,7 +67,9 @@
       "assets/**/*.jpeg",
       "assets/**/*.webp",
       "assets/**/*.svg",
-      "assets/**/*.ttf"
+      "assets/**/*.ttf",
+      "assets/**/*.tflite",
+      "assets/**/*.json"
     ]
   }
 }

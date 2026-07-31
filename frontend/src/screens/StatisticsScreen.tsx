@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.card,
     padding: theme.spacing.md,
     alignItems: 'center',
-    marginHorizontal: theme.spacing.xs,
+    marginHorizontal: theme.spacing.sm,
     shadowColor: theme.colors.darkTeal,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   severityLabel: {
     fontSize: theme.typography.caption.fontSize,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xs,
+    marginBottom: theme.spacing.sm,
     fontWeight: '500',
   },
   severityCount: {
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.body.fontSize,
     fontWeight: '600',
     color: theme.colors.deepTeal,
-    marginBottom: theme.spacing.xs,
+    marginBottom: theme.spacing.sm,
   },
   diseaseCount: {
     fontSize: theme.typography.caption.fontSize,
