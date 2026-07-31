@@ -1,12 +1,6 @@
 import { Platform } from 'react-native';
 
 // frontend/src/config/api.ts
-const defaultApiUrl =
-  process.env.EXPO_PUBLIC_API_BASE_URL?.trim() ||
-  (__DEV__
-    ? Platform.OS === 'android'
-      ? 'http://10.0.2.2:8000'
-      : 'http://127.0.0.1:8000'
-    : 'https://aggriscan.onrender.com');
-
-export const API_BASE_URL = defaultApiUrl;
+// The API base URL is hardcoded to the Render backend
+// This ensures the release APK always connects to the production backend
+export const API_BASE_URL = 'https://aggriscan.onrender.com';

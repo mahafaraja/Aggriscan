@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 const IS_LOCAL_BUILD = process.env.EAS_BUILD_PROFILE === 'local-backend';
 const IS_RENDER_BUILD = process.env.EAS_BUILD_PROFILE === 'render-backend';
+const IS_RELEASE = process.env.NODE_ENV === 'production' || process.env.APP_VARIANT === 'release';
 
 export default {
   expo: {
@@ -14,17 +15,18 @@ export default {
     extra: {
       eas: {
         projectId: '03a79f6c-d066-476d-bca2-ddb2a659b8fc'
-      }
+      },
+      API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'https://aggriscan.onrender.com'
     },
     owner: 'faraja_maha',
     android: {
       package: IS_LOCAL_BUILD 
         ? 'com.agriscan.local' 
-        : IS_RENDER_BUILD 
+        : IS_RENDER_BUILD || IS_RELEASE
           ? 'com.agriscan.cloud' 
           : 'com.faraja_maha.agriscan',
-      versionCode: IS_LOCAL_BUILD ? 100 : IS_RENDER_BUILD ? 200 : 1,
-      versionName: IS_LOCAL_BUILD ? '1.0.0-local' : IS_RENDER_BUILD ? '1.0.0-cloud' : '1.0.0',
+      versionCode: IS_LOCAL_BUILD ? 100 : (IS_RENDER_BUILD || IS_RELEASE) ? 200 : 1,
+      versionName: IS_LOCAL_BUILD ? '1.0.0-local' : (IS_RENDER_BUILD || IS_RELEASE) ? '1.0.0-cloud' : '1.0.0',
       icon: "./assets/icon.png",
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
