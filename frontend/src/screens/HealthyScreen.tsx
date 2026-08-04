@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft2, Scan, TickCircle } from 'iconsax-react-native';
 import { theme } from '../theme/Index';
 import { ScanPayload } from '../types/scan';
@@ -11,12 +12,13 @@ interface HealthyScreenProps {
 }
 
 export default function HealthyScreen({ scan, onBack, onScanAgain }: HealthyScreenProps) {
+  const insets = useSafeAreaInsets();
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} bounces={false}>
         <View style={styles.hero}>
           <Image source={{ uri: scan.imageUri }} style={styles.heroImage} />
-          <Pressable accessibilityRole="button" style={styles.backButton} onPress={onBack}>
+          <Pressable accessibilityRole="button" style={[styles.backButton, { top: insets.top + 8 }]} onPress={onBack}>
             <ArrowLeft2 size={20} color={theme.colors.darkTeal} variant="Linear" />
           </Pressable>
         </View>

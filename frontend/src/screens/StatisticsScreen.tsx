@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { getLocalHistory } from '../services/db';
+import { getLocalHistory, LocalReport } from '../services/db';
 import { syncOfflineReports } from '../services/sync';
 import { theme } from '../theme/Index';
 
@@ -18,6 +18,7 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
   const [severityBreakdown, setSeverityBreakdown] = useState<{ Low: number; Medium: number; High: number }>({ Low: 0, Medium: 0, High: 0 });
   const [avgConfidence, setAvgConfidence] = useState<number>(0);
   const [modelUsage, setModelUsage] = useState<{ [key: string]: number }>({});
+  const [recentScans, setRecentScans] = useState<LocalReport[]>([]);
 
   const loadDashboardStats = async () => {
     try {
@@ -67,6 +68,9 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
         // For now, we'll show a placeholder
       });
       setModelUsage(modelCounts);
+
+      // Store recent scans with real GPS data for display
+      setRecentScans(history.slice(0, 5));
 
     } catch (error) {
       console.error("Dashboard: Error fetching logs", error);
@@ -232,6 +236,40 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
                   </View>
                 </View>
               ))}
+          </View>
+        )}
+
+        {/* Recent Scans with Real GPS Locations */}
+        {recentScans.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Recent Scans (Real GPS Data)</Text>
+            {recentScans.map((scan) => (
+              <View key={scan.id} style={styles.recentScanCard}>
+                <View style={styles.recentScanHeader}>
+                  <Text style={styles.recentScanCrop}>{scan.crop_type}</Text>
+                  <View style={[styles.badge, scan.sync_status === 'SYNCED' ? styles.syncedBadge : styles.pendingBadge]}>
+                    <Text style={[styles.badgeText, scan.sync_status === 'SYNCED' ? styles.syncedText : styles.pendingText]}>
+                      {scan.sync_status}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.recentScanDisease}>{scan.disease_label.replace(/_/g, ' ')}</Text>
+                <View style={styles.gpsRow}>
+                  <Text style={styles.gpsLabel}>📍 Real Location:</Text>
+                  <Text style={styles.gpsCoords}>
+                    {scan.latitude.toFixed(6)}, {scan.longitude.toFixed(6)}
+                  </Text>
+                </View>
+                <Text style={styles.recentScanDate}>
+                  {new Date(scan.offline_created_at).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </Text>
+              </View>
+            ))}
           </View>
         )}
 
@@ -426,6 +464,82 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: theme.colors.deepTeal,
     fontWeight: '300',
+  },
+  recentScanCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.card,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    shadowColor: theme.colors.darkTeal,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  recentScanHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm / 2,
+  },
+  recentScanCrop: {
+    fontSize: theme.typography.caption.fontSize,
+    fontWeight: '800',
+    color: theme.colors.textSecondary,
+    letterSpacing: 1,
+  },
+  recentScanDisease: {
+    fontSize: theme.typography.body.fontSize,
+    fontWeight: '700',
+    color: theme.colors.darkTeal,
+    marginBottom: theme.spacing.sm,
+  },
+  gpsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm / 2,
+    marginBottom: theme.spacing.sm / 2,
+  },
+  gpsLabel: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
+  },
+  gpsCoords: {
+    fontSize: 11,
+    color: theme.colors.deepTeal,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+  },
+  recentScanDate: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm / 2,
+  },
+  badge: {
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm / 2,
+    borderRadius: theme.radius.input,
+  },
+  syncedBadge: {
+    backgroundColor: theme.colors.mint,
+  },
+  pendingBadge: {
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.warning,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  syncedText: {
+    color: theme.colors.deepTeal,
+  },
+  pendingText: {
+    color: theme.colors.warning,
   },
   severityContainer: {
     flexDirection: 'row',

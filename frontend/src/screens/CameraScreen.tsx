@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Image, SafeAreaView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, CameraView, CameraType } from 'expo-camera';
 import * as Location from 'expo-location';
 import { processScanImage } from '../services/scanProcessor';
@@ -13,6 +14,7 @@ interface CameraScreenProps {
 }
 
 export default function CameraScreen({ onNavigate, onScanComplete }: CameraScreenProps) {
+  const insets = useSafeAreaInsets();
   // Use Expo's native hook for handling camera permissions seamlessly
   const [cameraPermission, setCameraPermission] = useState<any>(null);
   const [hasLocationPermission, setHasLocationPermission] = useState<boolean | null>(null);
@@ -134,8 +136,8 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
   return (
     <SafeAreaView style={styles.container}>
       
-      {/* Header controls */}
-      <View style={styles.topBar}>
+      {/* Header controls - padded below status bar */}
+      <View style={[styles.topBar, { paddingTop: insets.top + theme.spacing.sm }]}>
         <TouchableOpacity style={styles.iconButton} onPress={() => onNavigate('Home')}>
           <Text style={styles.iconText}>← Back</Text>
         </TouchableOpacity>

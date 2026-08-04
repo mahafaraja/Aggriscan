@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft2, Health, Scan, ShieldSearch, DocumentText } from 'iconsax-react-native';
 import { theme } from '../theme/Index';
 import { ScanPayload, PlantAnalysisResponse } from '../types/scan';
@@ -17,6 +18,7 @@ export default function ScanResultScreen({
   onScanAgain,
   onTreatment,
 }: ScanResultScreenProps) {
+  const insets = useSafeAreaInsets();
   const confidence = `${(scan.diagnostic.confidence_score * 100).toFixed(1)}%`;
   const diseaseName = scan.diagnostic.disease_label.replace(/_/g, ' ');
   const isHealthy = scan.diagnostic.disease_label.toLowerCase().includes('healthy');
@@ -34,7 +36,7 @@ export default function ScanResultScreen({
       <ScrollView contentContainerStyle={styles.content} bounces={false}>
         <View style={styles.hero}>
           <Image source={{ uri: scan.imageUri }} style={styles.heroImage} />
-          <Pressable accessibilityRole="button" style={styles.backButton} onPress={onBack}>
+          <Pressable accessibilityRole="button" style={[styles.backButton, { top: insets.top + 8 }]} onPress={onBack}>
             <ArrowLeft2 size={20} color={theme.colors.darkTeal} variant="Linear" />
           </Pressable>
         </View>
