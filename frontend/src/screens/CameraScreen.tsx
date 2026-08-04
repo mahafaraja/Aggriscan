@@ -32,29 +32,47 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
 
     (async () => {
       try {
-        // 1. Trigger modern camera permission sequence
-        const permission = await Camera.requestCameraPermissionsAsync();
-        if (!cancelled) {
+        // Set a timeout for permission requests to prevent hanging
+        const timeoutPromise = new Promise((resolve) => {
+          setTimeout(() => resolve('timeout'), 5000); // 5 second timeout
+        });
+
+        // 1. Trigger modern camera permission sequence with timeout
+        const permissionPromise = Camera.requestCameraPermissionsAsync();
+        const permission = await Promise.race([permissionPromise, timeoutPromise]);
+        
+        if (!cancelled && permission !== 'timeout') {
           setCameraPermission(permission);
+        } else if (permission === 'timeout') {
+          console.warn("Camera permission request timed out");
         }
 
-        // 2. Trigger Foreground GPS permissions
-        const locationStatus = await Location.requestForegroundPermissionsAsync();
+        // 2. Trigger Foreground GPS permissions with timeout
+        const locationPromise = Location.requestForegroundPermissionsAsync();
+        const locationStatus = await Promise.race([locationPromise, timeoutPromise]);
+        
         if (cancelled) return;
 
-        const locationGranted = locationStatus.status === 'granted';
-        setHasLocationPermission(locationGranted);
+        if (locationStatus !== 'timeout') {
+          const locationGranted = locationStatus.status === 'granted';
+          setHasLocationPermission(locationGranted);
 
-        // Warm up GPS sensor early if permission is granted
-        if (locationGranted) {
-          try {
-            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            if (!cancelled) {
-              setGpsCoords({ lat: loc.coords.latitude, lon: loc.coords.longitude });
+          // Warm up GPS sensor early if permission is granted (with timeout)
+          if (locationGranted) {
+            try {
+              const gpsPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+              const loc = await Promise.race([gpsPromise, timeoutPromise]);
+              
+              if (!cancelled && loc !== 'timeout') {
+                setGpsCoords({ lat: loc.coords.latitude, lon: loc.coords.longitude });
+              }
+            } catch (e) {
+              console.warn("GPS warmup failed or timed out:", e);
             }
-          } catch (e) {
-            console.warn("GPS warmup failed or timed out:", e);
           }
+        } else {
+          console.warn("Location permission request timed out");
+          setHasLocationPermission(false);
         }
       } catch (error) {
         console.error("Permission initialization failed:", error);
@@ -79,34 +97,73 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
 
     try {
       // 1. Capture snap-frame using the correct layout configuration
-      const photo = await cameraRef.current.takePictureAsync();
-      if (!photo || !photo.uri) throw new Error("Failed to capture image data URI");
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        skipProcessing: false,
+      });
+      
+      if (!photo || !photo.uri) {
+        throw new Error("Failed to capture image data URI");
+      }
+      
       setCapturedImage(photo.uri);
 
-      // 2. Fetch coordinate points
+      // 2. Fetch coordinate points with fallback
       let lat = 0.3476; // Kampala baseline fallback coordinates
       let lon = 32.5825;
-      if (hasLocationPermission) {
+      
+      if (hasLocationPermission && gpsCoords) {
+        // Use cached GPS coordinates if available
+        lat = gpsCoords.lat;
+        lon = gpsCoords.lon;
+      } else if (hasLocationPermission) {
+        // Try to get fresh GPS coordinates with timeout
         try {
-          const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          lat = location.coords.latitude;
-          lon = location.coords.longitude;
-          setGpsCoords({ lat, lon });
+          const gpsPromise = Location.getCurrentPositionAsync({ 
+            accuracy: Location.Accuracy.Balanced,
+            timeout: 3000,
+          });
+          const timeoutPromise = new Promise((resolve) => {
+            setTimeout(() => resolve(null), 3000);
+          });
+          
+          const location = await Promise.race([gpsPromise, timeoutPromise]);
+          
+          if (location) {
+            lat = location.coords.latitude;
+            lon = location.coords.longitude;
+            setGpsCoords({ lat, lon });
+          } else {
+            console.warn("GPS fetch timed out, using fallback coordinates");
+          }
         } catch (gpsErr) {
-          console.warn("Could not fetch real-time GPS coordinates, falling back.", gpsErr);
+          console.warn("Could not fetch real-time GPS coordinates, using fallback:", gpsErr);
         }
       }
 
+      // 3. Process the scan with error handling
       const scan = await processScanImage({
         imageUri: photo.uri,
         latitude: lat,
         longitude: lon,
       });
+      
       onScanComplete(scan);
 
     } catch (error) {
       console.error("Diagnosis workflow failed:", error);
-      alert("Error processing crop diagnosis.");
+      
+      // Provide user-friendly error messages
+      let errorMessage = "Error processing crop diagnosis.";
+      if (error instanceof Error) {
+        if (error.message.includes('model') || error.message.includes('inference')) {
+          errorMessage = "Analysis temporarily unavailable. Please try again with a clearer image.";
+        } else if (error.message.includes('camera')) {
+          errorMessage = "Camera error. Please restart the app.";
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsProcessing(false);
     }

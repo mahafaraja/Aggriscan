@@ -12,14 +12,26 @@ import { theme } from '../theme/Index';
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75;
 
+const maskPhone = (phone: string): string => {
+  if (!phone || phone.length < 10) return phone;
+  // Mask middle digits for privacy: +256 700 000 000 -> +256 70* *** 000
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length === 12 && cleaned.startsWith('256')) {
+    return `+${cleaned.slice(0, 3)} ${cleaned.slice(3, 5)}* *** ${cleaned.slice(9)}`;
+  }
+  return phone;
+};
+
 interface SidebarProps {
   visible: boolean;
   onClose: () => void;
   onNavigate: (screen: 'Home' | 'Statistics' | 'Settings' | 'AccountInfo') => void;
   onLogout: () => void;
+  userPhone?: string;
+  userName?: string;
 }
 
-function Sidebar({ visible, onClose, onNavigate, onLogout }: SidebarProps) {
+function Sidebar({ visible, onClose, onNavigate, onLogout, userPhone, userName }: SidebarProps) {
   const slideAnim = React.useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
 
   React.useEffect(() => {
@@ -81,8 +93,8 @@ function Sidebar({ visible, onClose, onNavigate, onLogout }: SidebarProps) {
             <User size={40} color={theme.colors.textOnDark} variant="Bold" />
           </View>
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>Agriscan User</Text>
-            <Text style={styles.userPhone}>+256 700 000 000</Text>
+            <Text style={styles.userName}>{userName || 'Agriscan User'}</Text>
+            <Text style={styles.userPhone}>{userPhone ? maskPhone(userPhone) : '+256 700 000 000'}</Text>
           </View>
         </View>
 

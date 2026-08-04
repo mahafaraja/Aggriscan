@@ -61,11 +61,17 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
         setAvgConfidence(avg);
       }
 
-      // Calculate model usage (if available in extended data)
+      // Calculate model usage from real data
       const modelCounts: { [key: string]: number } = {};
       history.forEach(report => {
-        // Note: model_used would need to be added to LocalReport interface if tracking
-        // For now, we'll show a placeholder
+        // Check if model_used is stored in the report (we'll add it to the interface)
+        const modelUsed = (report as any).model_used;
+        if (modelUsed) {
+          modelCounts[modelUsed] = (modelCounts[modelUsed] || 0) + 1;
+        } else {
+          // If not tracked, count as "local_inference"
+          modelCounts['local_inference'] = (modelCounts['local_inference'] || 0) + 1;
+        }
       });
       setModelUsage(modelCounts);
 
@@ -233,6 +239,26 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
                   <View style={styles.diseaseInfo}>
                     <Text style={styles.diseaseName}>{disease}</Text>
                     <Text style={styles.diseaseCount}>{count} detection{count !== 1 ? 's' : ''}</Text>
+                  </View>
+                </View>
+              ))}
+          </View>
+        )}
+
+        {/* Model Usage Statistics */}
+        {Object.keys(modelUsage).length > 0 && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Model Usage</Text>
+            {Object.entries(modelUsage)
+              .sort(([, a], [, b]) => b - a)
+              .map(([model, count]) => (
+                <View key={model} style={styles.modelCard}>
+                  <View style={styles.modelInfo}>
+                    <Text style={styles.modelName}>{model.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</Text>
+                    <Text style={styles.modelCount}>{count} scan{count !== 1 ? 's' : ''}</Text>
+                  </View>
+                  <View style={styles.progressBar}>
+                    <View style={[styles.progressFill, { width: `${totalScans > 0 ? (count / totalScans) * 100 : 0}%` }]} />
                   </View>
                 </View>
               ))}

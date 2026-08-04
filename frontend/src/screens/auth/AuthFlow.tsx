@@ -136,6 +136,10 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
         await SecureStore.setItemAsync('auth_token', data.access_token);
         await SecureStore.setItemAsync('user_phone', phone);
         
+        // Extract and store user name if available, otherwise use a default
+        const userName = data.user_name || data.name || `User ${phone.slice(-4)}`;
+        await SecureStore.setItemAsync('user_name', userName);
+        
         goToSuccess();
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Invalid verification code. Please try again.';

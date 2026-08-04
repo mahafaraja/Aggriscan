@@ -57,6 +57,7 @@ export async function processScanImage({
       severity: result.severity,
       offline_created_at: scannedAt,
       image_url: imageUri,
+      model_used: result.model_used,
     });
 
     return {

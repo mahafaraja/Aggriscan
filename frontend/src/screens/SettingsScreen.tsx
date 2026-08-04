@@ -1,6 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView, Switch } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView, Switch, Alert } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { theme } from '../theme/Index';
+import { getLocalHistory } from '../services/db';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -11,6 +13,71 @@ function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
   const [notifications, setNotifications] = React.useState(true);
   const [autoSync, setAutoSync] = React.useState(true);
   const [darkMode, setDarkMode] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
+
+  // Load dark mode preference on mount
+  React.useEffect(() => {
+    loadDarkModePreference();
+  }, []);
+
+  const loadDarkModePreference = async () => {
+    try {
+      const savedMode = await SecureStore.getItemAsync('dark_mode');
+      if (savedMode !== null) {
+        setDarkMode(savedMode === 'true');
+      }
+    } catch (error) {
+      console.error('Error loading dark mode preference:', error);
+    }
+  };
+
+  const handleExportHistory = async () => {
+    if (isExporting) return;
+    
+    setIsExporting(true);
+    try {
+      const history = await getLocalHistory();
+      
+      if (history.length === 0) {
+        Alert.alert('No Data', 'There are no scan records to export.');
+        return;
+      }
+
+      // Create CSV content
+      const headers = ['Date', 'Crop Type', 'Disease', 'Confidence', 'Severity', 'Latitude', 'Longitude', 'Status'];
+      const rows = history.map(report => [
+        new Date(report.offline_created_at).toLocaleString(),
+        report.crop_type,
+        report.disease_label,
+        `${(report.confidence_score * 100).toFixed(1)}%`,
+        report.severity,
+        report.latitude.toFixed(6),
+        report.longitude.toFixed(6),
+        report.sync_status
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      // For now, show the data in an alert (in a real app, you'd use a file sharing library)
+      Alert.alert(
+        'Export Ready',
+        `Found ${history.length} scan records.\n\nCSV format ready for sharing.\n\nFirst record:\n${csvContent.split('\n')[1]}`,
+        [
+          { text: 'OK', style: 'default' }
+        ]
+      );
+
+      console.log('Exported CSV:', csvContent);
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert('Export Failed', 'Could not export scan history. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -61,7 +128,10 @@ function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
             </View>
             <Switch
               value={darkMode}
-              onValueChange={setDarkMode}
+              onValueChange={async (value) => {
+                setDarkMode(value);
+                await SecureStore.setItemAsync('dark_mode', value ? 'true' : 'false');
+              }}
               trackColor={{ false: theme.colors.border, true: theme.colors.success }}
               thumbColor={theme.colors.surface}
             />
@@ -77,9 +147,13 @@ function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
             <Text style={styles.actionArrow}>→</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionCard}>
-            <Text style={styles.actionText}>Export Scan History</Text>
-            <Text style={styles.actionArrow}>→</Text>
+          <TouchableOpacity 
+            style={styles.actionCard} 
+            onPress={handleExportHistory}
+            disabled={isExporting}
+          >
+            <Text style={styles.actionText}>{isExporting ? 'Exporting...' : 'Export Scan History'}</Text>
+            <Text style={styles.actionArrow}>{isExporting ? '⏳' : '→'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionCard}>
@@ -99,7 +173,7 @@ function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
 
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Build</Text>
-            <Text style={styles.infoValue}>2024.01.15</Text>
+            <Text style={styles.infoValue}>2026.04.08</Text>
           </View>
 
           <TouchableOpacity style={styles.actionCard}>

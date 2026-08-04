@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { User } from 'iconsax-react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Alert, Image } from 'react-native';
+import { User, Camera } from 'iconsax-react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../theme/Index';
 
 interface AccountInfoScreenProps {
@@ -10,6 +11,10 @@ interface AccountInfoScreenProps {
 
 function AccountInfoScreen({ onBack }: AccountInfoScreenProps) {
   const [phone, setPhone] = React.useState<string>('');
+  const [userName, setUserName] = React.useState<string>('');
+  const [profileImage, setProfileImage] = React.useState<string | null>(null);
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editedName, setEditedName] = React.useState<string>('');
 
   React.useEffect(() => {
     loadUserInfo();
@@ -18,11 +23,62 @@ function AccountInfoScreen({ onBack }: AccountInfoScreenProps) {
   const loadUserInfo = async () => {
     try {
       const userPhone = await SecureStore.getItemAsync('user_phone');
-      if (userPhone) {
-        setPhone(userPhone);
+      const name = await SecureStore.getItemAsync('user_name');
+      const profilePic = await SecureStore.getItemAsync('profile_image');
+      
+      if (userPhone) setPhone(userPhone);
+      if (name) {
+        setUserName(name);
+        setEditedName(name);
       }
+      if (profilePic) setProfileImage(profilePic);
     } catch (error) {
       console.error('Error loading user info:', error);
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!editedName.trim()) {
+      Alert.alert('Error', 'Name cannot be empty');
+      return;
+    }
+
+    try {
+      await SecureStore.setItemAsync('user_name', editedName.trim());
+      setUserName(editedName.trim());
+      setIsEditing(false);
+      Alert.alert('Success', 'Profile name updated successfully');
+    } catch (error) {
+      console.error('Error saving name:', error);
+      Alert.alert('Error', 'Could not save name. Please try again.');
+    }
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'Please grant camera roll permissions to upload a profile picture.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const imageUri = result.assets[0].uri;
+        setProfileImage(imageUri);
+        await SecureStore.setItemAsync('profile_image', imageUri);
+        Alert.alert('Success', 'Profile picture updated successfully');
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Could not upload profile picture. Please try again.');
     }
   };
 
@@ -41,9 +97,17 @@ function AccountInfoScreen({ onBack }: AccountInfoScreenProps) {
         {/* Profile Avatar */}
         <View style={styles.avatarContainer}>
           <View style={styles.avatar}>
-            <User size={60} color={theme.colors.textOnDark} variant="Bold" />
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.avatarImage} />
+            ) : (
+              <User size={60} color={theme.colors.textOnDark} variant="Bold" />
+            )}
           </View>
-          <Text style={styles.avatarLabel}>Agriscan User</Text>
+          <TouchableOpacity style={styles.changePhotoButton} onPress={handlePickImage}>
+            <Camera size={20} color={theme.colors.textOnDark} />
+            <Text style={styles.changePhotoText}>Change Photo</Text>
+          </TouchableOpacity>
+          <Text style={styles.avatarLabel}>{userName || 'Agriscan User'}</Text>
         </View>
 
         {/* Account Details */}
@@ -52,7 +116,9 @@ function AccountInfoScreen({ onBack }: AccountInfoScreenProps) {
           
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Phone Number</Text>
-            <Text style={styles.infoValue}>{phone || 'Not available'}</Text>
+            <Text style={styles.infoValue}>
+              {phone ? `+${phone.slice(0, 3)} ${phone.slice(3, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}` : 'Not available'}
+            </Text>
           </View>
 
           <View style={styles.infoCard}>
@@ -62,7 +128,32 @@ function AccountInfoScreen({ onBack }: AccountInfoScreenProps) {
 
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Member Since</Text>
-            <Text style={styles.infoValue}>January 2024</Text>
+            <Text style={styles.infoValue}>{new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</Text>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>Display Name</Text>
+            {isEditing ? (
+              <View style={styles.editNameContainer}>
+                <TextInput
+                  style={styles.nameInput}
+                  value={editedName}
+                  onChangeText={setEditedName}
+                  placeholder="Enter your name"
+                  placeholderTextColor={theme.colors.textSecondary}
+                />
+                <TouchableOpacity onPress={handleSaveName} style={styles.saveButton}>
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.nameDisplayContainer}>
+                <Text style={styles.infoValue}>{userName || 'Not set'}</Text>
+                <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.editButton}>
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
 
@@ -171,6 +262,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: theme.spacing.md,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 100,
+    height: 100,
+    resizeMode: 'cover',
+  },
+  changePhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.mint,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.input,
+    marginBottom: theme.spacing.md,
+  },
+  changePhotoText: {
+    color: theme.colors.deepTeal,
+    fontSize: theme.typography.caption.fontSize,
+    fontWeight: '700',
+    marginLeft: theme.spacing.sm / 2,
   },
   avatarLabel: {
     fontSize: theme.typography.h2.fontSize,
@@ -209,6 +321,48 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.body.fontSize,
     fontWeight: '600',
     color: theme.colors.deepTeal,
+  },
+  editNameContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  nameInput: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radius.input,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    color: theme.colors.deepTeal,
+    fontSize: theme.typography.body.fontSize,
+  },
+  saveButton: {
+    backgroundColor: theme.colors.success,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.input,
+  },
+  saveButtonText: {
+    color: theme.colors.textOnDark,
+    fontWeight: '700',
+    fontSize: theme.typography.caption.fontSize,
+  },
+  nameDisplayContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  editButton: {
+    backgroundColor: theme.colors.mint,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.input,
+  },
+  editButtonText: {
+    color: theme.colors.deepTeal,
+    fontWeight: '700',
+    fontSize: theme.typography.caption.fontSize,
   },
   subscriptionCard: {
     backgroundColor: theme.colors.surface,

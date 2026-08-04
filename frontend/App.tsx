@@ -40,6 +40,8 @@ function App() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [userPhone, setUserPhone] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
     initSQLiteDatabase().catch((error) => {
@@ -50,9 +52,14 @@ function App() {
     const checkAuthStatus = async () => {
       try {
         const token = await SecureStore.getItemAsync('auth_token');
+        const phone = await SecureStore.getItemAsync('user_phone');
+        const name = await SecureStore.getItemAsync('user_name');
+        
         if (token) {
           // User is already authenticated, go directly to Home
           setScreen('Home');
+          if (phone) setUserPhone(phone);
+          if (name) setUserName(name);
         }
       } catch (error) {
         console.error('App: Auth check failed:', error);
@@ -194,6 +201,8 @@ function App() {
             onClose={toggleSidebar}
             onNavigate={handleSidebarNavigate}
             onLogout={handleLogout}
+            userPhone={userPhone}
+            userName={userName}
           />
         )}
       </View>

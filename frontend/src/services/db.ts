@@ -16,6 +16,7 @@ export interface LocalReport {
   offline_created_at: string;
   image_url?: string;
   sync_status: 'PENDING' | 'SYNCED';
+  model_used?: string;
 }
 
 export const initSQLiteDatabase = async (): Promise<void> => {
@@ -32,7 +33,8 @@ export const initSQLiteDatabase = async (): Promise<void> => {
         severity TEXT NOT NULL,
         offline_created_at TEXT NOT NULL,
         image_url TEXT,
-        sync_status TEXT DEFAULT 'PENDING'
+        sync_status TEXT DEFAULT 'PENDING',
+        model_used TEXT
       );`
     );
     console.log("SQLite: local_reports table initialized.");
@@ -48,8 +50,8 @@ export const saveOfflineReport = async (report: Omit<LocalReport, 'sync_status'>
     db.withTransactionSync(() => {
       db.runSync(
         `INSERT INTO local_reports 
-        (id, crop_type, disease_label, confidence_score, latitude, longitude, severity, offline_created_at, image_url, sync_status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING');`,
+        (id, crop_type, disease_label, confidence_score, latitude, longitude, severity, offline_created_at, image_url, sync_status, model_used) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?);`,
         [
           report.id,
           report.crop_type,
@@ -59,7 +61,8 @@ export const saveOfflineReport = async (report: Omit<LocalReport, 'sync_status'>
           report.longitude,
           report.severity,
           report.offline_created_at,
-          report.image_url || null
+          report.image_url || null,
+          report.model_used || null
         ]
       );
     });

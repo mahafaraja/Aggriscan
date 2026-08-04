@@ -200,7 +200,7 @@ class CropInferenceService:
                     "model_used": "mobilenetv2_crop_gatekeeper"
                 }
             except Exception as e:
-                logger.exception("Gatekeeper model failed")
+                logger.warning("Gatekeeper model failed, trying fallback: %s", str(e))
         
         # Strategy 2: Fallback to agriscan model
         if self.agriscan_interpreter and self.agriscan_class_map:
@@ -245,16 +245,17 @@ class CropInferenceService:
                     "model_used": "agriscan_model (fallback)"
                 }
             except Exception as e:
-                logger.exception("Agriscan fallback model failed")
+                logger.warning("Agriscan fallback model failed: %s", str(e))
         
-        # Ultimate fallback
+        # Ultimate fallback - return a safe default response
+        logger.error("All models failed - returning fallback response")
         return {
             "crop_type": "Unknown",
-            "disease_label": "Unknown_Disease",
+            "disease_label": "Analysis_Unavailable",
             "confidence_score": 0.0,
             "severity": "Unknown",
             "detected_raw_crop": "Unknown",
-            "model_used": "none"
+            "model_used": "fallback_error"
         }
     
     def _predict_with_disease_expert(self, image_path: str, crop_type: str):
