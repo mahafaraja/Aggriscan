@@ -12,10 +12,11 @@ export function AuthBackground({ children, style, ...props }: AuthBackgroundProp
     <View style={[styles.container, style]} {...props}>
       <Svg pointerEvents="none" style={StyleSheet.absoluteFill}>
         <Defs>
+          {/* @ts-ignore */}
           <LinearGradient id="authGradient" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={theme.colors.mint} stopOpacity="0.62" />
-            <Stop offset="0.62" stopColor={theme.colors.deepTeal} stopOpacity="1" />
-            <Stop offset="1" stopColor="#005E5E" stopOpacity="1" />
+            <Stop offset="0%" stopColor={theme.colors.mint} stopOpacity="0.62" />
+            <Stop offset="62%" stopColor={theme.colors.deepTeal} stopOpacity="1" />
+            <Stop offset="100%" stopColor="#005E5E" stopOpacity="1" />
           </LinearGradient>
         </Defs>
         <Rect width="100%" height="100%" fill="url(#authGradient)" />

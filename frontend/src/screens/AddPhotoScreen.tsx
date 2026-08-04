@@ -40,7 +40,7 @@ export default function AddPhotoScreen({ onBack, onScanComplete }: AddPhotoScree
       quality: 0.85,
     });
 
-    if (!result.canceled && result.assets[0]?.uri) {
+    if (!result.canceled && result.assets && result.assets[0]?.uri) {
       setImageUri(result.assets[0].uri);
     }
   };
@@ -119,8 +119,8 @@ export default function AddPhotoScreen({ onBack, onScanComplete }: AddPhotoScree
             disabled={!imageUri || isProcessing}
             style={({ pressed }) => [
               styles.continueButton,
-              (!imageUri || isProcessing) && styles.continueButtonDisabled,
-              pressed && imageUri && !isProcessing && styles.pressed,
+              ...((!imageUri || isProcessing) ? [styles.continueButtonDisabled] : []),
+              ...(pressed && imageUri && !isProcessing ? [styles.pressed] : []),
             ]}
             onPress={continueWithPhoto}
           >

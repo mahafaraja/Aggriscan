@@ -1,0 +1,43 @@
+# Environment files
+frontend/.eas.env
+frontend/.env
+frontend/.env.local
+frontend/.env.*
+backend/.env
+backend/.env.*
+*.env
+*.env.local
+*.env.*
+
+# Build artifacts
+frontend/android/.gradle/
+frontend/android/app/build/
+frontend/android/app/release.keystore
+frontend/android/app/debug.keystore
+frontend/android/local.properties
+frontend/android/.idea/
+
+# Node
+frontend/node_modules/
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+backend/app/services/config/firebase_sms.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Temporary scripts
+frontend/create_keystore.bat
+frontend/install_deps.bat
+
+# Render MCP Server
+render-mcp-server/

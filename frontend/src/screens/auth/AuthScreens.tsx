@@ -73,6 +73,8 @@ type PhoneScreenProps = {
   onPhoneChange?: (value: string) => void;
   onVerify?: () => void;
   onBack?: () => void;
+  loading?: boolean;
+  error?: string | null;
 };
 
 export function PhoneAuthScreen({
@@ -81,6 +83,8 @@ export function PhoneAuthScreen({
   onPhoneChange,
   onVerify,
   onBack,
+  loading = false,
+  error = null,
 }: PhoneScreenProps) {
   const styles = size === 'preview' ? previewStyles : fullStyles;
 
@@ -98,11 +102,13 @@ export function PhoneAuthScreen({
           keyboardType="phone-pad"
           style={styles.input}
         />
+        {error && <Text style={styles.errorText}>{error}</Text>}
         <AuthButton
-          label="verify"
+          label={loading ? "Sending..." : "verify"}
           onPress={onVerify}
           style={styles.formButton}
           textStyle={styles.buttonText}
+          disabled={loading}
         />
       </View>
     </AuthScreenLayout>
@@ -116,6 +122,8 @@ type VerificationScreenProps = {
   onCodeChange?: (value: string, index: number) => void;
   onVerify?: () => void;
   onBack?: () => void;
+  loading?: boolean;
+  error?: string | null;
 };
 
 export function VerificationAuthScreen({
@@ -125,6 +133,8 @@ export function VerificationAuthScreen({
   onCodeChange,
   onVerify,
   onBack,
+  loading = false,
+  error = null,
 }: VerificationScreenProps) {
   const styles = size === 'preview' ? previewStyles : fullStyles;
 
@@ -149,11 +159,13 @@ export function VerificationAuthScreen({
             onComplete={handleCodeComplete}
           />
         </View>
+        {error && <Text style={styles.errorText}>{error}</Text>}
         <AuthButton
-          label="verify"
+          label={loading ? "Verifying..." : "verify"}
           onPress={onVerify}
           style={styles.formButton}
           textStyle={styles.buttonText}
+          disabled={loading}
         />
       </View>
     </AuthScreenLayout>
@@ -281,6 +293,13 @@ const previewStyles = StyleSheet.create({
   buttonText: {
     fontSize: 10,
   },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 9,
+    fontWeight: '600',
+    marginTop: 8,
+    textAlign: 'center',
+  },
 });
 
 const fullStyles = StyleSheet.create({
@@ -386,5 +405,12 @@ const fullStyles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 12,
+    textAlign: 'center',
   },
 });

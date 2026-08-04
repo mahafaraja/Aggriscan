@@ -4,6 +4,7 @@ from typing import List
 import os
 import shutil
 import uuid
+import logging
 from datetime import datetime
 from ..database import get_db
 from .. import schemas, crud, auth, models
@@ -16,6 +17,7 @@ from ..services.plant_identification import (
 )
 
 router = APIRouter(prefix="/api/v1/reports", tags=["Reports & Geospatial Mapping"])
+logger = logging.getLogger(__name__)
 
 @router.post("/diagnose")
 def diagnose_crop_image(file: UploadFile = File(...)):
@@ -101,19 +103,22 @@ def analyze_plant_image(file: UploadFile = File(...)):
         }
         
         # Step 1: Image Validation
-        print("Step 1: Validating image...")
+        logger.info("Analyze plant step 1: validating image")
         validation_service = get_image_validation_service()
         validation_result = validation_service.validate_plant_image(temp_file_path)
         analysis_result["image_validation"] = validation_result
         analysis_result["image_validated"] = validation_result.get("is_plant", False)
         
-        if not validation_result.get("is_plant", False):
+        if not validation_result.get("is_plant", False) and not validation_result.get("error", False):
             analysis_result["error"] = "Image does not appear to contain a plant"
             analysis_result["suggestion"] = "Please upload a clear image of a plant leaf, flower, or stem"
             return analysis_result
+
+        if validation_result.get("error", False):
+            logger.warning("Image validation unavailable, continuing to identification: %s", validation_result.get("reason"))
         
         # Step 2: Plant Identification with Fallback
-        print("Step 2: Identifying plant...")
+        logger.info("Analyze plant step 2: identifying plant")
         identification_service = get_plant_identification_service()
         identification_result = identification_service.identify_plant(temp_file_path)
         analysis_result["plant_identification"] = identification_result
@@ -125,7 +130,7 @@ def analyze_plant_image(file: UploadFile = File(...)):
             return analysis_result
         
         # Step 3: Care Recommendations
-        print("Step 3: Generating care recommendations...")
+        logger.info("Analyze plant step 3: generating care recommendations")
         care_service = get_care_recommendation_service()
         plant_data = identification_result.get("plant_data", {})
         
@@ -138,7 +143,7 @@ def analyze_plant_image(file: UploadFile = File(...)):
         treatment_result = {"success": False, "note": "No disease detected or treatment not applicable"}
         
         # Step 4: PDF Report Generation
-        print("Step 4: Generating PDF report...")
+        logger.info("Analyze plant step 4: generating PDF report")
         pdf_service = get_pdf_report_generator()
         report_result = pdf_service.generate_report(analysis_result)
         analysis_result["pdf_report"] = report_result

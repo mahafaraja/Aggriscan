@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft2, Health, Scan, ShieldTick } from 'iconsax-react-native';
 import { getTreatmentGuide } from '../services/treatmentGuide';
 import { theme } from '../theme/Index';
@@ -16,6 +17,7 @@ export default function TreatmentPreventionScreen({
   onBack,
   onScanAgain,
 }: TreatmentPreventionScreenProps) {
+  const insets = useSafeAreaInsets();
   const guide = getTreatmentGuide(scan.diagnostic.disease_label);
 
   return (
@@ -23,7 +25,7 @@ export default function TreatmentPreventionScreen({
       <ScrollView contentContainerStyle={styles.content} bounces={false}>
         <View style={styles.hero}>
           <Image source={{ uri: scan.imageUri }} style={styles.heroImage} />
-          <Pressable accessibilityRole="button" style={styles.backButton} onPress={onBack}>
+          <Pressable accessibilityRole="button" style={[styles.backButton, { top: insets.top + 8 }]} onPress={onBack}>
             <ArrowLeft2 size={20} color={theme.colors.darkTeal} variant="Linear" />
           </Pressable>
         </View>

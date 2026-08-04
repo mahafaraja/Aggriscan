@@ -14,11 +14,21 @@ services:
       - key: REDIS_URL
         sync: false
       - key: SECRET_KEY
-        generateValue: true
+        value: agriscan-2026-vectoria-university-bcs-project-jwt-secret-key-xyz789
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 1440
       - key: SMS_PROVIDER
-        value: mock
+        value: yoola
+      - key: YOLLA_SMS_API_KEY
+        sync: false
+      - key: YOLLA_SMS_API_BASE
+        value: https://yoolasms.com/api/v1
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PLANTID_API_KEY
+        sync: false
+      - key: PLANTNET_API_KEY
+        sync: false
 
 databases:
   - name: agriscan_backend_db

@@ -11,6 +11,11 @@
     "owner": "faraja_maha",
     "android": {
       "package": "com.faraja_maha.agriscan",
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ffffff"
+      },
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -29,68 +34,42 @@
         },
         "NSCameraUsageDescription": "Allow Agriscan to access your camera to scan crop leaves for disease detection",
         "NSLocationWhenInUseUsageDescription": "Allow Agriscan to access your location for geospatial disease mapping",
-        "NSPhotoLibraryUsageDescription": "Allow Agriscan to access your photo library to select images for scanning"
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Agriscan to access your location for geospatial disease mapping",
+        "NSPhotoLibraryUsageDescription": "Allow Agriscan to access your photo library to select images for scanning",
+        "NSPhotoLibraryAddUsageDescription": "Allow Agriscan to save scanned images to your photo library",
+        "NSMicrophoneUsageDescription": "Allow Agriscan to access your microphone for audio features"
       }
     },
     "plugins": [
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "imageWidth": 200
+        }
+      ],
       [
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true,
-            "minSdkVersion": 24,
-            "targetSdkVersion": 36,
-            "compileSdkVersion": 36
-          },
-          "ios": {
-            "deploymentTarget": "16.4"
+            "networkSecurityConfig": true,
+            "usesCleartextTraffic": true
           }
-        }
-      ],
-      [
-        "expo-font",
-        {
-          "fonts": [
-            "./assets/fonts/Poppins-Regular.ttf",
-            "./assets/fonts/Poppins-Medium.ttf",
-            "./assets/fonts/Poppins-SemiBold.ttf",
-            "./assets/fonts/Poppins-Bold.ttf"
-          ]
         }
       ]
     ],
     "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "bundleIdentifier": "com.faraja-maha.agriscan",
-      "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        },
-        "NSCameraUsageDescription": "Allow Agriscan to access your camera to scan crop leaves for disease detection",
-        "NSLocationWhenInUseUsageDescription": "Allow Agriscan to access your location for geospatial disease mapping",
-        "NSPhotoLibraryUsageDescription": "Allow Agriscan to access your photo library to select images for scanning"
-      },
-      "font": {
-        "family": "Poppins"
-      }
-    },
-    "android": {
-      "package": "com.faraja_maha.agriscan",
-      "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "CAMERA",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ],
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#014546"
-      }
-    }
+      "assets/**/*.png",
+      "assets/**/*.jpg",
+      "assets/**/*.jpeg",
+      "assets/**/*.webp",
+      "assets/**/*.svg",
+      "assets/**/*.ttf",
+      "assets/**/*.tflite",
+      "assets/**/*.json"
+    ]
   }
 }

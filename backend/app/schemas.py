@@ -25,10 +25,14 @@ class UserLogin(BaseModel):
 
 class SMSSendRequest(BaseModel):
     phone_number: str
+    recaptcha_token: Optional[str] = None
 
 class SMSVerifyRequest(BaseModel):
     phone_number: str
     code: str
+
+class FirebaseVerifyRequest(BaseModel):
+    id_token: str
 
 class Token(BaseModel):
     access_token: str
@@ -40,7 +44,7 @@ class TokenData(BaseModel):
 
 # Report Schemas
 class ReportCreate(BaseModel):
-    crop_type: str = Field(..., pattern="^(Cassava|Banana)$")
+    crop_type: str = Field(..., pattern="^(Banana|Bean|Cassava|Coffee|Corn|Groundnuts|Maize|Potato|Tomato)$")
     disease_label: str
     confidence_score: float = Field(..., ge=0.0, le=1.0)
     latitude: float = Field(..., ge=-90.0, le=90.0)

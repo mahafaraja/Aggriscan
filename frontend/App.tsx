@@ -14,6 +14,7 @@ import StatisticsScreen from './src/screens/StatisticsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AccountInfoScreen from './src/screens/AccountInfoScreen';
 import Sidebar from './src/components/Sidebar';
+import { AnimatedSplashScreen } from './src/components/AnimatedSplashScreen';
 import { initSQLiteDatabase } from './src/services/db';
 import { theme } from './src/theme/Index';
 import { ScanPayload } from './src/types/scan';
@@ -38,6 +39,7 @@ function App() {
   const [latestScan, setLatestScan] = useState<ScanPayload | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     initSQLiteDatabase().catch((error) => {
@@ -108,6 +110,14 @@ function App() {
     setScreen('Camera');
   };
 
+  if (showSplash) {
+    return (
+      <SafeAreaProvider>
+        <AnimatedSplashScreen onAnimationComplete={() => setShowSplash(false)} />
+      </SafeAreaProvider>
+    );
+  }
+
   if (isCheckingAuth) {
     // Show a loading screen while checking authentication
     return (
@@ -168,6 +178,7 @@ function App() {
         {screen === 'Settings' && (
           <SettingsScreen 
             onBack={() => setScreen('Home')} 
+            onLogout={handleLogout}
           />
         )}
         {screen === 'AccountInfo' && (

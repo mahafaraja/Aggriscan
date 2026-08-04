@@ -5,9 +5,18 @@
     "jsx": "react-jsx",
     "ignoreDeprecations": "6.0",
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "*": ["*", "src/*"]
-    }
-  }
+      "*": [
+        "*",
+        "src/*"
+      ]
+    },
+    "skipLibCheck": true
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
 }

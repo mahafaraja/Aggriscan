@@ -1,9 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+import logging
+import os
 from .database import engine, Base, SessionLocal
 from .routers import auth, reports
 from .models import User
+from .config import settings
+
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+logger = logging.getLogger(__name__)
 
 # Programmatic table creation if they do not exist
 Base.metadata.create_all(bind=engine)
@@ -13,7 +19,7 @@ def seed_database():
     db = SessionLocal()
     try:
         if db.query(User).count() == 0:
-            print("Seeding database with default developer accounts...")
+            logger.info("Seeding database with default developer accounts...")
             seed_users = [
                 User(
                     phone_number='+256700000001',
@@ -36,9 +42,9 @@ def seed_database():
             ]
             db.add_all(seed_users)
             db.commit()
-            print("Database seeding completed successfully.")
+            logger.info("Database seeding completed successfully.")
     except Exception as e:
-        print(f"Error seeding database: {e}")
+        logger.exception("Error seeding database")
     finally:
         db.close()
 
@@ -60,6 +66,43 @@ def health_check():
     except Exception as exc:
         return {"database": "error", "detail": str(exc), "status": "failed"}
 
+@app.get("/health/config")
+def health_config_check():
+    model_dir = os.path.join(os.path.dirname(__file__), "model_assets")
+    expected_models = [
+        "mobilenetv2_crop_gatekeeper.tflite",
+        "agriscan_model.tflite",
+        "maize_disease_expert.tflite",
+        "banana_disease_expert.tflite",
+        "bean_disease_expert.tflite",
+        "cassava_disease_expert.tflite",
+        "coffe_model/coffee_model.tflite",
+        "groundnuts_disease_expert.tflite",
+        "potato_disease_expert.tflite",
+        "tomato_disease_expert.tflite",
+    ]
+    return {
+        "status": "ok",
+        "sms": {
+            "provider": settings.SMS_PROVIDER,
+            "provider_ready": settings.sms_provider_ready(),
+            "yoola_api_key_configured": bool(settings.YOLLA_SMS_API_KEY),
+        },
+        "ai": {
+            "gemini_api_key_configured": bool(settings.GEMINI_API_KEY),
+            "plantid_api_key_configured": bool(settings.PLANTID_API_KEY),
+            "plantnet_api_key_configured": bool(settings.PLANTNET_API_KEY),
+        },
+        "models": {
+            "model_dir": model_dir,
+            "model_dir_exists": os.path.isdir(model_dir),
+            "files": {
+                name: os.path.exists(os.path.join(model_dir, name))
+                for name in expected_models
+            },
+        },
+    }
+
 # CORS configurations for local React Native testing
 app.add_middleware(
     CORSMiddleware,
@@ -72,6 +115,16 @@ app.add_middleware(
 # Attach Routers
 app.include_router(auth.router)
 app.include_router(reports.router)
+
+@app.on_event("startup")
+def log_runtime_configuration():
+    logger.info(
+        "Runtime configuration sms_provider=%s sms_provider_ready=%s yoola_key_configured=%s gemini_key_configured=%s",
+        settings.SMS_PROVIDER,
+        settings.sms_provider_ready(),
+        bool(settings.YOLLA_SMS_API_KEY),
+        bool(settings.GEMINI_API_KEY),
+    )
 
 @app.get("/")
 def read_root():

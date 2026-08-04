@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet, Alert, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   PhoneAuthScreen,
@@ -11,6 +11,7 @@ import { maskPhone } from './maskPhone';
 import { AuthStep } from './types';
 import { API_BASE_URL } from '../../config/api';
 import * as SecureStore from 'expo-secure-store';
+import { validatePhoneNumber } from '../../config/yolla';
 
 interface AuthFlowProps {
   onAuthSuccess: () => void;
@@ -21,18 +22,18 @@ const normalizePhoneNumber = (value: string) => {
   if (!digits) return value.trim();
 
   if (digits.startsWith('256')) {
-    return `+${digits}`;
+    return digits;
   }
 
   if (digits.startsWith('0')) {
-    return `+256${digits.slice(1)}`;
+    return `256${digits.slice(1)}`;
   }
 
-  if (digits.startsWith('7')) {
-    return `+256${digits}`;
+  if (digits.startsWith('7') || digits.startsWith('8')) {
+    return `256${digits}`;
   }
 
-  return value.startsWith('+') ? value : `+${digits}`;
+  return digits;
 };
 
 export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
@@ -40,6 +41,7 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState<string[]>(Array(6).fill(''));
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const goToPhone = () => setStep('phone');
   const goToVerification = () => setStep('verification');
@@ -63,27 +65,40 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
   const sendSMSCode = async () => {
     const normalizedPhone = normalizePhoneNumber(phone);
     
+    // Validate phone number
+    if (!validatePhoneNumber(normalizedPhone)) {
+      Alert.alert('Error', 'Please enter a valid phone number');
+      return;
+    }
+    
     // Auto-advance when 10 digits reached
     if (normalizedPhone.replace(/\D/g, '').length >= 10) {
       setPhone(normalizedPhone);
       setLoading(true);
+      setError(null);
       try {
+        // Call backend to send OTP via YoolaSMS
         const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms/send`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ phone_number: normalizedPhone }),
+          body: JSON.stringify({
+            phone_number: normalizedPhone,
+          }),
         });
 
         if (!response.ok) {
-          throw new Error('Failed to send SMS code');
+          const errorData = await response.json().catch(() => ({ detail: 'Failed to send verification code' }));
+          throw new Error(errorData.detail || 'Failed to send verification code');
         }
 
         goToVerification();
       } catch (error) {
-        Alert.alert('Error', 'Failed to send verification code. Please try again.');
+        const errorMessage = error instanceof Error ? error.message : 'Failed to send verification code. Please try again.';
+        Alert.alert('Error', errorMessage);
         console.error('SMS send error:', error);
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -95,34 +110,38 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
     
     // Auto-verify when 6 digits entered
     if (codeString.length === 6) {
-      const normalizedPhone = normalizePhoneNumber(phone);
       setLoading(true);
+      setError(null);
       try {
+        // Call backend to verify OTP and get JWT
         const response = await fetch(`${API_BASE_URL}/api/v1/auth/sms/verify`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            phone_number: normalizedPhone,
+            phone_number: phone,
             code: codeString,
           }),
         });
 
         if (!response.ok) {
-          throw new Error('Invalid verification code');
+          const errorData = await response.json().catch(() => ({ detail: 'Invalid verification code' }));
+          throw new Error(errorData.detail || 'Invalid verification code');
         }
 
         const data = await response.json();
         
-        // Store the token
+        // Store auth token and phone number
         await SecureStore.setItemAsync('auth_token', data.access_token);
-        await SecureStore.setItemAsync('user_phone', normalizedPhone);
+        await SecureStore.setItemAsync('user_phone', phone);
         
         goToSuccess();
       } catch (error) {
-        Alert.alert('Error', 'Invalid verification code. Please try again.');
+        const errorMessage = error instanceof Error ? error.message : 'Invalid verification code. Please try again.';
+        Alert.alert('Error', errorMessage);
         console.error('SMS verify error:', error);
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -148,6 +167,8 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
             onPhoneChange={setPhone}
             onVerify={sendSMSCode}
             onBack={goToWelcome}
+            loading={loading}
+            error={error}
           />
         )}
 
@@ -159,6 +180,8 @@ export default function AuthFlow({ onAuthSuccess }: AuthFlowProps) {
             onCodeChange={handleCodeChange}
             onVerify={verifySMSCode}
             onBack={goToPhone}
+            loading={loading}
+            error={error}
           />
         )}
 
