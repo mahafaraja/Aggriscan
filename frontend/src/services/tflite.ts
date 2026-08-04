@@ -7,8 +7,16 @@ export interface DiagnosticsResult {
   severity: 'Low' | 'Medium' | 'High';
   detected_raw_crop?: string;
   green_ratio?: number;
+  model_used?: string;
+  fallback_used?: boolean;
 }
 
+/**
+ * TFLiteModelService
+ *
+ * NOTE: react-native-fast-tflite does not support Android (native code is stubbed out).
+ * The backend API is used as the primary inference method, with a mock fallback.
+ */
 export class TFLiteModelService {
   private static instance: TFLiteModelService;
   private isModelLoaded: boolean = false;
@@ -23,69 +31,79 @@ export class TFLiteModelService {
   }
 
   /**
-   * Initializes the TFLite native interpreter and downloads/loads the `.tflite` model asset.
+   * Initializes the service. Since react-native-fast-tflite doesn't support Android,
+   * this just marks the service as ready for backend inference.
    */
   public async initModel(): Promise<void> {
+    console.log('TFLite Engine: Using backend API for inference (react-native-fast-tflite does not support Android)');
+    this.isModelLoaded = true;
+  }
+
+  /**
+   * Run inference on the captured crop image.
+   * Uses the backend API as the primary method, with mock fallback.
+   */
+  public async classifyCropImage(imageUri: string): Promise<DiagnosticsResult> {
+    console.log(`Frontend Model Service: Processing image: ${imageUri}`);
+
+    // Strategy 1: Use backend API
     try {
-      console.log("TFLite Engine: Loading crop_disease_model_int8.tflite from assets...");
-      
-      // In a real build, load model using react-native-fast-tflite or custom native bindings:
-      // this.model = await loadTensorflowModel(require('../../assets/models/crop_disease_model_int8.tflite'));
-      
-      this.isModelLoaded = true;
-      console.log("TFLite Engine: Quantized model loaded successfully.");
-    } catch (error) {
-      console.error("TFLite Engine: Failed to initialize native model interpreter:", error);
-      this.isModelLoaded = false;
+      return await this.classifyViaBackend(imageUri);
+    } catch (e) {
+      console.warn('Frontend Model Service: Backend diagnose API failed, falling back to mock:', e);
+      return this.executeMockDiagnosticFallback();
     }
   }
 
   /**
-   * Run inference on the captured crop image by uploading to the backend API.
-   * Falls back to a local mock generator if the backend is unreachable during dev.
+   * Send image to backend diagnostic API.
    */
-  public async classifyCropImage(imageUri: string): Promise<DiagnosticsResult> {
+  private async classifyViaBackend(imageUri: string): Promise<DiagnosticsResult> {
     console.log(`Frontend Model Service: Sending image to backend: ${imageUri} (${API_BASE_URL})`);
 
-    try {
-      const formData = new FormData();
-      const filename = imageUri.split('/').pop() || 'crop_image.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image/jpeg`;
+    const formData = new FormData();
+    const filename = imageUri.split('/').pop() || 'crop_image.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : `image/jpeg`;
 
-      formData.append('file', {
-        uri: imageUri,
-        name: filename,
-        type: type
-      } as any);
+    formData.append('file', {
+      uri: imageUri,
+      name: filename,
+      type: type,
+    } as any);
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/diagnose`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
+    const response = await fetch(`${API_BASE_URL}/api/v1/reports/diagnose`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        Accept: 'application/json',
+      },
+    });
 
-      if (!response.ok) {
-        throw new Error(`Server diagnostic endpoint returned status ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("Frontend Model Service: Received diagnosis result:", result);
-
-      return {
-        crop_type: result.crop_type,
-        disease_label: result.disease_label,
-        confidence_score: result.confidence_score,
-        severity: result.severity as 'Low' | 'Medium' | 'High',
-        detected_raw_crop: result.detected_raw_crop,
-        green_ratio: result.green_ratio,
-      };
-    } catch (e) {
-      console.warn("Frontend Model Service: Backend diagnose API failed, falling back to mock:", e);
-      return this.executeMockDiagnosticFallback();
+    if (!response.ok) {
+      throw new Error(`Server diagnostic endpoint returned status ${response.status}`);
     }
+
+    const result = await response.json();
+    console.log('Frontend Model Service: Received diagnosis result:', result);
+
+    return {
+      crop_type: result.crop_type,
+      disease_label: result.disease_label,
+      confidence_score: result.confidence_score,
+      severity: result.severity as 'Low' | 'Medium' | 'High',
+      detected_raw_crop: result.detected_raw_crop,
+      green_ratio: result.green_ratio,
+      model_used: 'backend_keras',
+      fallback_used: false,
+    };
+  }
+
+  /**
+   * Check if the service is ready.
+   */
+  public isReady(): boolean {
+    return this.isModelLoaded;
   }
 
   private executeMockDiagnosticFallback(): Promise<DiagnosticsResult> {
@@ -96,18 +114,20 @@ export class TFLiteModelService {
           { label: 'Cassava_CMD', severity: 'High' as const },
           { label: 'Banana_BBW', severity: 'High' as const },
           { label: 'Cassava_Healthy', severity: 'Low' as const },
-          { label: 'Banana_Healthy', severity: 'Low' as const }
+          { label: 'Banana_Healthy', severity: 'Low' as const },
         ];
-        
+
         // Randomly pick class output for simulation
         const match = potentialClasses[Math.floor(Math.random() * potentialClasses.length)];
-        const confidence = parseFloat((0.70 + Math.random() * 0.28).toFixed(4));
-        
+        const confidence = parseFloat((0.7 + Math.random() * 0.28).toFixed(4));
+
         resolve({
           crop_type: match.label.includes('Cassava') ? 'Cassava' : 'Banana',
           disease_label: match.label,
           confidence_score: confidence,
-          severity: confidence > 0.85 ? 'High' : match.severity
+          severity: confidence > 0.85 ? 'High' : match.severity,
+          model_used: 'mock_fallback',
+          fallback_used: true,
         });
       }, 450);
     });

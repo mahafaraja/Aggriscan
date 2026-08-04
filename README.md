@@ -68,11 +68,14 @@ The application uses machine learning to detect diseases across 8 crop types wit
 - **TypeScript** - Type-safe JavaScript
 - **Expo Camera** - Camera access for leaf scanning
 - **Expo Image Picker** - Gallery photo selection
+- **Expo Image Manipulator** - Image resizing and preprocessing for ML inference
 - **Expo Location** - GPS coordinates for disease mapping
 - **Expo SQLite** - Local offline storage
 - **Expo Secure Store** - Secure token storage
 - **React Native SVG** - Vector graphics
 - **Iconsax React Native** - Icon library
+- **pako** - PNG decompression for image preprocessing
+- **react-native-fast-tflite** - TFLite native runtime (optional, for on-device inference)
 
 ### Backend
 - **FastAPI** - Modern Python web framework
@@ -360,15 +363,24 @@ This dual approach ensures the app works in low-connectivity areas.
 
 Agriscan implements a robust fallback system to ensure reliability:
 
-### 1. Offline Mode
+### 1. Inference Fallback Chain
+The scan flow uses a **two-tier inference system**:
+
+1. **Frontend TFLite Models (PRIMARY)** - On-device inference using `.tflite` models from `frontend/assets/models/`
+   - Gatekeeper model (`mobilenetv2_crop_gatekeeper.tflite`) identifies the crop type
+   - Disease expert models (e.g. `banana_disease_expert.tflite`) classify the specific disease
+   - Requires `react-native-fast-tflite` native runtime
+   - Image preprocessing via `expo-image-manipulator` + `pako` (resize to 224x224, decode PNG, normalize to [-1, 1])
+
+2. **Backend .keras Models (FALLBACK)** - If frontend TFLite is unavailable, the image is sent to the backend API
+   - POST `/api/v1/reports/diagnose` with the image
+   - Backend runs the `.keras`/`.tflite` models server-side
+   - Returns crop type, disease label, confidence score, and severity
+
+### 2. Offline Mode
 - **Local Storage:** SQLite database stores scan history
 - **Local Inference:** TFLite model runs on-device without internet
 - **Sync Queue:** Scans are queued and synced when connection returns
-
-### 2. Backend Fallback
-- If backend API is unreachable, app uses local TFLite inference
-- Results may be slightly less accurate but functional
-- User is notified of offline mode
 
 ### 3. Model Fallback
 - If pretrained model fails to load, falls back to current model
@@ -729,17 +741,32 @@ python test_inference.py
 
 ## Hosting & Deployment
 
-### Expo Builds
+### Local APK Build (No EAS Credits Required)
 
-The app is built and distributed using **Expo EAS (Expo Application Services)**.
+You can build the APK directly using Gradle on Windows:
+
+```bash
+cd frontend/android
+gradlew.bat assembleRelease
+```
+
+The APK will be at: `frontend/android/app/build/outputs/apk/release/app-release.apk`
+
+Or use the automated script:
+```bash
+cd frontend
+build-apk.bat
+# Select option 1 (Local Debug), 2 (Render Debug), or 3 (Render Release)
+```
+
+### Expo EAS Builds
+
+The app can also be built and distributed using **Expo EAS (Expo Application Services)**.
 
 **Build Profiles:**
 - **Development:** For testing during development
 - **Preview:** For internal testing and demos
 - **Production:** For app store distribution
-
-**Build Links:**
-All builds are managed through Expo's build service. Build links are shared privately with team members and stakeholders for testing.
 
 **To create a build:**
 ```bash
@@ -749,8 +776,6 @@ eas login
 eas build --platform android --profile preview
 eas build --platform ios --profile preview
 ```
-
-**Note:** Build links are distributed privately to maintain security and control over app distribution.
 
 ### Backend Hosting
 

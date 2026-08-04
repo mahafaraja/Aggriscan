@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "expo-image-manipulator": "^57.0.7",
+    "pako": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/pako": "^2.0.4",
+    "typescript": "^7.0.2"
+  }
+}

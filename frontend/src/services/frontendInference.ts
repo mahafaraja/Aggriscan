@@ -11,24 +11,20 @@ export interface DiagnosticsResult {
   fallback_used?: boolean;
 }
 
-export interface ClassMap {
-  [key: string]: string;
-}
-
 /**
- * Frontend TFLite Inference Service
- * 
+ * Frontend Inference Service
+ *
  * Architecture:
- * 1. Try local TFLite models (frontend assets) - PRIMARY
- * 2. Fallback to backend .keras models - SECONDARY
- * 3. Fallback to Gemini API - TERTIARY
+ * 1. Frontend TFLite models (assets) - PRIMARY
+ * 2. Backend .keras models - FALLBACK
+ *
+ * The frontend TFLite models are loaded from the assets folder. If the native
+ * TFLite runtime is unavailable (e.g. react-native-fast-tflite not installed),
+ * the service gracefully falls back to the backend .keras models.
  */
 export class FrontendInferenceService {
   private static instance: FrontendInferenceService;
   private isInitialized: boolean = false;
-  private gatekeeperModel: any = null;
-  private diseaseModels: Map<string, any> = new Map();
-  private classMaps: Map<string, ClassMap> = new Map();
 
   private constructor() {}
 
@@ -40,112 +36,37 @@ export class FrontendInferenceService {
   }
 
   /**
-   * Initialize TFLite models from frontend assets
-   * Note: Requires react-native-fast-tflite or similar library to be installed
+   * Initialize the service.
    */
   public async initialize(): Promise<void> {
     if (this.isInitialized) {
       return;
     }
 
-    try {
-      console.log('Frontend Inference: Initializing TFLite models from assets...');
-      
-      // Load class maps
-      await this.loadClassMaps();
-      
-      // TODO: Load TFLite models when library is available
-      // Example with react-native-fast-tflite:
-      // this.gatekeeperModel = await TFLite.loadModel(
-      //   require('../../assets/models/mobilenetv2_crop_gatekeeper.tflite')
-      // );
-      
-      // For now, mark as initialized but models will be mocked
-      this.isInitialized = true;
-      console.log('Frontend Inference: Initialization complete (TFLite runtime pending)');
-    } catch (error) {
-      console.error('Frontend Inference: Failed to initialize:', error);
-      this.isInitialized = false;
-    }
-  }
-
-  /**
-   * Load class maps from frontend assets
-   */
-  private async loadClassMaps(): Promise<void> {
-    try {
-      // Load gatekeeper class map (crop types)
-      const gatekeeperMap = await this.loadJsonAsset('../../assets/models/class_map.json');
-      if (gatekeeperMap) {
-        this.classMaps.set('gatekeeper', gatekeeperMap);
-      }
-
-      // Load disease expert class maps for each crop
-      const diseaseClassMaps = {
-        'banana': 'banana_disease_class_map.json',
-        'bean': 'bean_disease_class_map.json',
-        'cassava': 'cassava_disease_class_map.json',
-        'coffee': 'coffee_class_map.json',
-        'groundnuts': 'groundnuts_disease_class_map.json',
-        'maize': 'maize_class_map.json',
-        'potato': 'potato_disease_class_map.json',
-        'tomato': 'tomato_disease_class_map.json',
-      };
-
-      // Load each disease class map
-      for (const [crop, filename] of Object.entries(diseaseClassMaps)) {
-        const classMap = await this.loadJsonAsset(`../../assets/models/${filename}`);
-        if (classMap) {
-          this.classMaps.set(crop, classMap);
-          console.log(`Frontend Inference: Loaded class map for ${crop}`);
-        } else {
-          console.warn(`Frontend Inference: Could not load class map for ${crop}`);
-        }
-      }
-
-      console.log('Frontend Inference: All class maps loaded successfully');
-    } catch (error) {
-      console.error('Frontend Inference: Failed to load class maps:', error);
-    }
-  }
-
-  /**
-   * Load JSON asset file
-   */
-  private async loadJsonAsset(path: string): Promise<ClassMap | null> {
-    try {
-      // In React Native, use require for assets
-      // For dynamic loading, you might need a different approach
-      const asset = require(path);
-      return asset as ClassMap;
-    } catch (error) {
-      console.warn(`Frontend Inference: Could not load asset ${path}:`, error);
-      return null;
-    }
+    console.log('Frontend Inference: Initializing');
+    this.isInitialized = true;
   }
 
   /**
    * Main inference method with fallback chain
-   * Priority: Frontend TFLite -> Backend .keras -> Gemini API
+   * Priority: Frontend TFLite -> Backend .keras
    */
   public async classifyImage(imageUri: string): Promise<DiagnosticsResult> {
-    console.log('Frontend Inference: Starting classification with fallback chain');
+    console.log('Frontend Inference: Starting classification');
 
-    // Strategy 1: Try frontend TFLite inference
-    if (this.isInitialized) {
-      try {
-        const frontendResult = await this.runFrontendInference(imageUri);
-        if (frontendResult && frontendResult.confidence_score > 0) {
-          console.log('Frontend Inference: Success using local TFLite model');
-          return {
-            ...frontendResult,
-            model_used: 'frontend_tflite',
-            fallback_used: false
-          };
-        }
-      } catch (error) {
-        console.warn('Frontend Inference: Local TFLite inference failed, trying backend:', error);
+    // Strategy 1: Try frontend TFLite models
+    try {
+      const frontendResult = await this.runFrontendInference(imageUri);
+      if (frontendResult && frontendResult.confidence_score > 0) {
+        console.log('Frontend Inference: Success using frontend TFLite model');
+        return {
+          ...frontendResult,
+          model_used: 'frontend_tflite',
+          fallback_used: false,
+        };
       }
+    } catch (error) {
+      console.warn('Frontend Inference: Frontend TFLite inference failed, trying backend:', error);
     }
 
     // Strategy 2: Fallback to backend .keras models
@@ -156,26 +77,11 @@ export class FrontendInferenceService {
         return {
           ...backendResult,
           model_used: 'backend_keras',
-          fallback_used: true
+          fallback_used: true,
         };
       }
     } catch (error) {
-      console.warn('Frontend Inference: Backend inference failed, trying Gemini:', error);
-    }
-
-    // Strategy 3: Final fallback to Gemini API
-    try {
-      const geminiResult = await this.runGeminiInference(imageUri);
-      if (geminiResult) {
-        console.log('Frontend Inference: Success using Gemini API');
-        return {
-          ...geminiResult,
-          model_used: 'gemini_api',
-          fallback_used: true
-        };
-      }
-    } catch (error) {
-      console.error('Frontend Inference: All inference methods failed:', error);
+      console.error('Frontend Inference: Backend inference failed:', error);
     }
 
     // Ultimate fallback: return mock result
@@ -184,33 +90,165 @@ export class FrontendInferenceService {
   }
 
   /**
-   * Run inference using frontend TFLite models
-   * TODO: Implement when TFLite runtime is available
+   * Run inference using frontend TFLite models.
+   * This attempts to load and run the .tflite models from assets.
+   * If the native TFLite runtime is unavailable, this returns null.
    */
   private async runFrontendInference(imageUri: string): Promise<DiagnosticsResult | null> {
     try {
-      // TODO: Implement actual TFLite inference
-      // This is a placeholder for when react-native-fast-tflite is installed
-      
-      // Example implementation:
-      // 1. Load and preprocess image
-      // const imageData = await this.loadAndPreprocessImage(imageUri);
-      // 
-      // 2. Run gatekeeper model
-      // const gatekeeperResult = await this.runModel(this.gatekeeperModel, imageData);
-      // const cropType = this.classMaps.get('gatekeeper')?.[gatekeeperResult.classIndex];
-      // 
-      // 3. Run disease expert model
-      // const diseaseResult = await this.runDiseaseExpert(cropType, imageData);
-      // 
-      // 4. Return formatted result
-      
-      // For now, return null to trigger backend fallback
-      return null;
+      // Attempt to load the TFLite runtime dynamically.
+      // If react-native-fast-tflite is not installed, this will throw and
+      // the service will fall back to the backend .keras models.
+      const tflite = require('react-native-fast-tflite');
+      if (!tflite || !tflite.loadTensorflowModel) {
+        console.warn('Frontend Inference: TFLite runtime not available');
+        return null;
+      }
+
+      // Load the gatekeeper model (crop type classifier)
+      const gatekeeperModel = await tflite.loadTensorflowModel(
+        require('../../assets/models/mobilenetv2_crop_gatekeeper.tflite')
+      );
+
+      // Preprocess the image to Float32Array
+      const { preprocessImageForTFLite } = require('./imagePreprocessing');
+      const imageData = await preprocessImageForTFLite(imageUri);
+      if (!imageData) {
+        console.warn('Frontend Inference: Image preprocessing returned null');
+        return null;
+      }
+
+      // Run gatekeeper model to identify crop type
+      const gatekeeperOutput = await gatekeeperModel.run([imageData]);
+      const gatekeeperScores = gatekeeperOutput[0] as Float32Array;
+
+      // Load gatekeeper class map
+      const gatekeeperClassMap = require('../../assets/models/class_map.json');
+
+      let maxIndex = 0;
+      let maxScore = gatekeeperScores[0];
+      for (let i = 1; i < gatekeeperScores.length; i++) {
+        if (gatekeeperScores[i] > maxScore) {
+          maxScore = gatekeeperScores[i];
+          maxIndex = i;
+        }
+      }
+
+      const cropKey = gatekeeperClassMap[String(maxIndex)];
+      console.log(`Frontend Inference: Gatekeeper predicted crop="${cropKey}"`);
+
+      // Load the disease expert model for the identified crop
+      const diseaseModelFile = this.getDiseaseModelFile(cropKey);
+      if (!diseaseModelFile) {
+        return null;
+      }
+
+      const diseaseModel = await tflite.loadTensorflowModel(
+        require(`../../assets/models/${diseaseModelFile}`)
+      );
+
+      // Run disease expert model
+      const diseaseOutput = await diseaseModel.run([imageData]);
+      const diseaseScores = diseaseOutput[0] as Float32Array;
+
+      // Load disease class map
+      const diseaseClassMap = this.getDiseaseClassMap(cropKey);
+      if (!diseaseClassMap) {
+        return null;
+      }
+
+      maxIndex = 0;
+      maxScore = diseaseScores[0];
+      for (let i = 1; i < diseaseScores.length; i++) {
+        if (diseaseScores[i] > maxScore) {
+          maxScore = diseaseScores[i];
+          maxIndex = i;
+        }
+      }
+
+      const diseaseLabel = diseaseClassMap[String(maxIndex)];
+      console.log(`Frontend Inference: Disease expert predicted "${diseaseLabel}"`);
+
+      return {
+        crop_type: this.normalizeCropType(cropKey),
+        disease_label: diseaseLabel,
+        confidence_score: parseFloat(maxScore.toFixed(4)),
+        severity: this.determineSeverity(diseaseLabel, maxScore),
+        detected_raw_crop: cropKey,
+      };
     } catch (error) {
-      console.error('Frontend Inference: TFLite inference error:', error);
+      console.warn('Frontend Inference: Frontend TFLite inference unavailable:', error);
       return null;
     }
+  }
+
+  /**
+   * Map crop key to its `.tflite` disease expert model filename.
+   */
+  private getDiseaseModelFile(cropKey: string): string | null {
+    switch (cropKey) {
+      case 'banana':
+        return 'banana_disease_expert.tflite';
+      case 'bean':
+        return 'bean_disease_expert.tflite';
+      case 'cassava':
+        return 'cassava_disease_expert.tflite';
+      case 'coffee':
+        return 'coffee_disease_expert.tflite';
+      case 'groundnuts':
+        return 'groundnuts_disease_expert.tflite';
+      case 'corn':
+        return 'maize_disease_expert.tflite';
+      case 'potato':
+        return 'potato_disease_expert.tflite';
+      case 'tomato':
+        return 'tomato_disease_expert.tflite';
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Get the disease class map for a crop.
+   */
+  private getDiseaseClassMap(cropKey: string): { [key: string]: string } | null {
+    try {
+      switch (cropKey) {
+        case 'banana':
+          return require('../../assets/models/banana_disease_class_map.json');
+        case 'bean':
+          return require('../../assets/models/bean_disease_class_map.json');
+        case 'cassava':
+          return require('../../assets/models/cassava_disease_class_map.json');
+        case 'coffee':
+          return require('../../assets/models/coffee_class_map.json');
+        case 'groundnuts':
+          return require('../../assets/models/groundnuts_disease_class_map.json');
+        case 'corn':
+          return require('../../assets/models/maize_class_map.json');
+        case 'potato':
+          return require('../../assets/models/potato_disease_class_map.json');
+        case 'tomato':
+          return require('../../assets/models/tomato_disease_class_map.json');
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.warn(`Frontend Inference: Could not load class map for ${cropKey}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Determine severity from disease label and confidence.
+   */
+  private determineSeverity(label: string, confidence: number): 'Low' | 'Medium' | 'High' {
+    if (label.toLowerCase().includes('healthy')) {
+      return 'Low';
+    }
+    if (confidence > 0.85) return 'High';
+    if (confidence > 0.7) return 'Medium';
+    return 'Low';
   }
 
   /**
@@ -226,14 +264,14 @@ export class FrontendInferenceService {
       formData.append('file', {
         uri: imageUri,
         name: filename,
-        type: type
+        type: type,
       } as any);
 
       const response = await fetch(`${API_BASE_URL}/api/v1/reports/diagnose`, {
         method: 'POST',
         body: formData,
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
       });
 
@@ -242,14 +280,14 @@ export class FrontendInferenceService {
       }
 
       const result = await response.json();
-      
+
       return {
         crop_type: result.crop_type,
         disease_label: result.disease_label,
         confidence_score: result.confidence_score,
         severity: result.severity as 'Low' | 'Medium' | 'High',
         detected_raw_crop: result.detected_raw_crop,
-        green_ratio: result.green_ratio
+        green_ratio: result.green_ratio,
       };
     } catch (error) {
       console.error('Backend inference failed:', error);
@@ -258,59 +296,13 @@ export class FrontendInferenceService {
   }
 
   /**
-   * Run inference using Gemini API (via backend)
-   */
-  private async runGeminiInference(imageUri: string): Promise<DiagnosticsResult | null> {
-    try {
-      const formData = new FormData();
-      const filename = imageUri.split('/').pop() || 'crop_image.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image/jpeg`;
-
-      formData.append('file', {
-        uri: imageUri,
-        name: filename,
-        type: type
-      } as any);
-
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/analyze-plant`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Gemini API returned status ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.plant_identified && result.plant_identification) {
-        const plantData = result.plant_identification.plant_data;
-        return {
-          crop_type: this.normalizeCropType(plantData.plant_name),
-          disease_label: plantData.plant_name,
-          confidence_score: result.summary?.confidence || 0.5,
-          severity: 'Low' as const,
-          detected_raw_crop: plantData.plant_name
-        };
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Gemini inference failed:', error);
-      return null;
-    }
-  }
-
-  /**
    * Normalize crop type from plant name
    */
-  private normalizeCropType(plantName: string): 'Banana' | 'Bean' | 'Cassava' | 'Coffee' | 'Corn' | 'Groundnuts' | 'Potato' | 'Tomato' {
+  private normalizeCropType(
+    plantName: string
+  ): 'Banana' | 'Bean' | 'Cassava' | 'Coffee' | 'Corn' | 'Groundnuts' | 'Potato' | 'Tomato' {
     const normalized = plantName.toLowerCase();
-    
+
     if (normalized.includes('cassava')) return 'Cassava';
     if (normalized.includes('bean')) return 'Bean';
     if (normalized.includes('coffee')) return 'Coffee';
@@ -329,27 +321,32 @@ export class FrontendInferenceService {
       { label: 'Cassava_CMD', crop: 'Cassava' as const, severity: 'High' as const },
       { label: 'Banana_BBW', crop: 'Banana' as const, severity: 'High' as const },
       { label: 'Cassava_Healthy', crop: 'Cassava' as const, severity: 'Low' as const },
-      { label: 'Banana_Healthy', crop: 'Banana' as const, severity: 'Low' as const }
+      { label: 'Banana_Healthy', crop: 'Banana' as const, severity: 'Low' as const },
     ];
-    
+
     const match = potentialClasses[Math.floor(Math.random() * potentialClasses.length)];
-    const confidence = parseFloat((0.70 + Math.random() * 0.28).toFixed(4));
-    
+    const confidence = parseFloat((0.7 + Math.random() * 0.28).toFixed(4));
+
     return {
       crop_type: match.crop,
       disease_label: match.label,
       confidence_score: confidence,
       severity: confidence > 0.85 ? 'High' : match.severity,
       model_used: 'mock_fallback',
-      fallback_used: true
+      fallback_used: true,
     };
   }
 
   /**
-   * Check if frontend TFLite is available
+   * Check if frontend inference is available
    */
   public isTFLiteAvailable(): boolean {
-    return this.isInitialized && this.gatekeeperModel !== null;
+    try {
+      const tflite = require('react-native-fast-tflite');
+      return !!tflite && !!tflite.loadTensorflowModel;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
@@ -359,7 +356,7 @@ export class FrontendInferenceService {
     return {
       frontend: this.isTFLiteAvailable(),
       backend: true, // Backend is always available if server is reachable
-      gemini: true  // Gemini is configured on backend
+      gemini: false, // Gemini is not used in the primary fallback chain
     };
   }
 }
