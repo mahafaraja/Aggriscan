@@ -1,7 +1,9 @@
 import os
 import json
 import logging
+import requests
 import numpy as np
+from typing import Optional
 from PIL import Image
 import tensorflow as tf
 
@@ -34,16 +36,14 @@ class CropInferenceService:
         }
         self.fallback_disease_class_maps = {
             "banana": {
-                "0": "Banana_Healthy",
+                "0": "Banana_BBW",
                 "1": "Banana_Black_Sigatoka",
-                "2": "Banana_Pestalotiopsis",
-                "3": "Banana_Cordana",
+                "2": "Banana_Healthy",
             },
             "bean": {
                 "0": "Bean_Healthy",
                 "1": "Bean_Angular_Leaf_Spot",
-                "2": "Bean_Anthracnose",
-                "3": "Bean_Rust",
+                "2": "Bean_Rust",
             },
             "cassava": {
                 "0": "Cassava_Healthy",
@@ -58,17 +58,25 @@ class CropInferenceService:
                 "2": "Groundnuts_Late_Rust",
                 "3": "Groundnuts_Early_Spot",
                 "4": "Groundnuts_Late_Spot",
+                "5": "Groundnuts_Rosette",
             },
             "potato": {
                 "0": "Potato_Healthy",
                 "1": "Potato_Late_Blight",
-                "2": "Potato_Brown_Streak",
+                "2": "Potato_Early_Blight",
             },
             "tomato": {
-                "0": "Tomato_Healthy",
+                "0": "Tomato_Bacterial_Spot",
                 "1": "Tomato_Early_Blight",
                 "2": "Tomato_Late_Blight",
                 "3": "Tomato_Leaf_Mold",
+                "4": "Tomato_Septoria_Leaf_Spot",
+                "5": "Tomato_Spider_Mites",
+                "6": "Tomato_Target_Spot",
+                "7": "Tomato_Yellow_Leaf_Curl_Virus",
+                "8": "Tomato_Mosaic_Virus",
+                "9": "Tomato_Healthy",
+                "10": "Tomato_Healthy",
             },
         }
         
@@ -161,17 +169,120 @@ class CropInferenceService:
         
         return pred_idx, confidence
     
+    def _predict_with_plantnet(self, image_path: str):
+        """
+        Use PlantNet API as the primary plant identification service,
+        replacing the gatekeeper model for crop type detection.
+        """
+        from ..config import settings
+        plantnet_key = settings.PLANTNET_API_KEY
+        if not plantnet_key or plantnet_key == "your_plantnet_api_key_here":
+            logger.info("PlantNet skipped because PLANTNET_API_KEY is not configured")
+            return None
+        
+        try:
+            # PlantNet only accepts JPEG/PNG - convert WebP/other formats
+            import io
+            img = Image.open(image_path).convert('RGB')
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='JPEG', quality=95)
+            img_buffer.seek(0)
+            
+            files = {'images': ('image.jpg', img_buffer, 'image/jpeg')}
+            data = {'organs': 'leaf'}
+            headers = {'Authorization': f"Bearer {plantnet_key}"}
+            
+            response = requests.post(
+                "https://my-api.plantnet.org/v2/identify/all",
+                files=files,
+                data=data,
+                headers=headers,
+                timeout=30
+            )
+            
+            if response.status_code != 200:
+                logger.warning("PlantNet API error: %s", response.status_code)
+                return None
+            
+            result = response.json()
+            if not result.get('results') or len(result['results']) == 0:
+                logger.info("PlantNet returned no results")
+                return None
+            
+            best_match = result['results'][0]
+            species = best_match.get('species', {})
+            # PlantNet v2 response format uses scientificNameWithoutAuthor
+            scientific_name = species.get('scientificName', species.get('scientificNameWithoutAuthor', 'Unknown'))
+            confidence = best_match.get('score', 0.0)
+            
+            # Map scientific name to crop type
+            crop_type = self._map_scientific_name_to_crop(scientific_name)
+            if not crop_type:
+                logger.info("PlantNet identified species not in crop map: %s", scientific_name)
+                return None
+            
+            # Try to use disease expert model for this crop
+            disease_result = self._predict_with_disease_expert(image_path, crop_type.lower())
+            if disease_result:
+                disease_result["model_used"] = f"plantnet + {crop_type}_disease_expert"
+                disease_result["plantnet_species"] = scientific_name
+                return disease_result
+            
+            # If no disease expert, use PlantNet result
+            severity = "High" if confidence > 0.8 else "Medium" if confidence > 0.5 else "Low"
+            return {
+                "crop_type": crop_type.capitalize(),
+                "disease_label": f"{crop_type.capitalize()}_Disease",
+                "confidence_score": confidence,
+                "severity": severity,
+                "detected_raw_crop": scientific_name,
+                "model_used": "plantnet",
+                "plantnet_species": scientific_name
+            }
+                
+        except Exception as e:
+            logger.exception("PlantNet identification failed")
+            return None
+    
+    def _map_scientific_name_to_crop(self, scientific_name: str) -> Optional[str]:
+        """
+        Map PlantNet scientific name to known crop types.
+        Returns None if the species is not a supported crop.
+        """
+        name_lower = scientific_name.lower()
+        crop_keywords = {
+            "banana": ["musa", "banana"],
+            "bean": ["phaseolus", "vigna", "bean"],
+            "cassava": ["manihot", "cassava"],
+            "coffee": ["coffea", "coffee"],
+            "maize": ["zea", "maize", "corn"],
+            "groundnuts": ["arachis", "groundnut", "peanut"],
+            "potato": ["solanum tuberosum", "potato"],
+            "tomato": ["solanum lycopersicum", "tomato"],
+        }
+        for crop, keywords in crop_keywords.items():
+            if any(kw in name_lower for kw in keywords):
+                return crop
+        return None
+    
     def predict_crop(self, image_path: str):
         """
         Loads an image, preprocesses it, runs inference, and returns predicted crop type,
         confidence score, mapped disease labels, and severity.
         
         Enhanced fallback chain:
-        1. Try gatekeeper model (MobileNetV2) for crop type
-        2. Try disease expert model for specific crop
-        3. Fallback to agriscan_model
+        1. Try PlantNet API (primary - replaces gatekeeper for plant identification)
+        2. Try gatekeeper model (MobileNetV2) for crop type
+        3. Try disease expert model for specific crop
+        4. Fallback to agriscan_model
         """
-        # Strategy 1: Use gatekeeper model + disease expert model
+        # Strategy 1: Use PlantNet API (primary - replaces gatekeeper)
+        plantnet_result = self._predict_with_plantnet(image_path)
+        if plantnet_result:
+            logger.info("Plant identification succeeded using PlantNet (primary)")
+            return plantnet_result
+        
+        # Strategy 2: Use gatekeeper model + disease expert model
         if self.gatekeeper_interpreter and self.gatekeeper_class_map:
             try:
                 img_array = self._preprocess_image(image_path, self.gatekeeper_interpreter.get_input_details()[0]['shape'])
@@ -200,7 +311,7 @@ class CropInferenceService:
                     "model_used": "mobilenetv2_crop_gatekeeper"
                 }
             except Exception as e:
-                logger.exception("Gatekeeper model failed")
+                logger.warning("Gatekeeper model failed, trying fallback: %s", str(e))
         
         # Strategy 2: Fallback to agriscan model
         if self.agriscan_interpreter and self.agriscan_class_map:
@@ -245,16 +356,17 @@ class CropInferenceService:
                     "model_used": "agriscan_model (fallback)"
                 }
             except Exception as e:
-                logger.exception("Agriscan fallback model failed")
+                logger.warning("Agriscan fallback model failed: %s", str(e))
         
-        # Ultimate fallback
+        # Ultimate fallback - return a safe default response
+        logger.error("All models failed - returning fallback response")
         return {
             "crop_type": "Unknown",
-            "disease_label": "Unknown_Disease",
+            "disease_label": "Analysis_Unavailable",
             "confidence_score": 0.0,
             "severity": "Unknown",
             "detected_raw_crop": "Unknown",
-            "model_used": "none"
+            "model_used": "fallback_error"
         }
     
     def _predict_with_disease_expert(self, image_path: str, crop_type: str):

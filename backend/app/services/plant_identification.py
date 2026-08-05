@@ -269,49 +269,58 @@ class PlantIdentificationService:
             return {"success": False, "error": str(e), "service": "plantid"}
     
     def identify_with_plantnet(self, image_path: str) -> Dict[str, Any]:
-        """Fallback identification using PlantNet API"""
+        """Primary identification using PlantNet API (replaces gatekeeper)"""
         if not self.plantnet_api_key or self.plantnet_api_key == "your_plantnet_api_key_here":
             logger.info("PlantNet skipped because PLANTNET_API_KEY is not configured")
             return {"success": False, "error": "PlantNet API key not configured", "service": "plantnet"}
         
         try:
-            with open(image_path, 'rb') as f:
-                files = {'images': f}
-                params = {
-                    'organs': 'leaf'
-                }
-                headers = {
-                    'Authorization': f"Bearer {self.plantnet_api_key}"
-                }
-                
-                response = requests.post(
-                    self.plantnet_url,
-                    files=files,
-                    params=params,
-                    headers=headers,
-                    timeout=30
-                )
-                
-                if response.status_code != 200:
-                    return {"success": False, "error": f"PlantNet API error: {response.status_code}", "service": "plantnet"}
-                
-                result = response.json()
-                
-                if result.get('results') and len(result['results']) > 0:
-                    best_match = result['results'][0]
-                    species = best_match.get('species', {})
-                    return {
-                        "success": True,
-                        "service": "plantnet",
-                        "data": {
-                            "plant_name": species.get('common_names', [{}])[0].get('name', 'Unknown') if species.get('common_names') else 'Unknown',
-                            "scientific_name": species.get('scientific_name', 'Unknown'),
-                            "confidence": best_match.get('score', 0.0),
-                            "family": species.get('family', {}).get('scientific_name', 'Unknown') if species.get('family') else 'Unknown'
-                        }
+            # PlantNet only accepts JPEG/PNG - convert WebP/other formats
+            import io
+            from PIL import Image as PILImage
+            img = PILImage.open(image_path).convert('RGB')
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='JPEG', quality=95)
+            img_buffer.seek(0)
+            
+            files = {'images': ('image.jpg', img_buffer, 'image/jpeg')}
+            data = {
+                'organs': 'leaf'
+            }
+            headers = {
+                'Authorization': f"Bearer {self.plantnet_api_key}"
+            }
+            
+            response = requests.post(
+                self.plantnet_url,
+                files=files,
+                data=data,
+                headers=headers,
+                timeout=30
+            )
+            
+            if response.status_code != 200:
+                return {"success": False, "error": f"PlantNet API error: {response.status_code}", "service": "plantnet"}
+            
+            result = response.json()
+            
+            if result.get('results') and len(result['results']) > 0:
+                best_match = result['results'][0]
+                species = best_match.get('species', {})
+                # PlantNet v2 response format uses scientificNameWithoutAuthor and commonNames
+                common_names = species.get('commonNames', [])
+                return {
+                    "success": True,
+                    "service": "plantnet",
+                    "data": {
+                        "plant_name": common_names[0] if common_names else species.get('scientificNameWithoutAuthor', 'Unknown'),
+                        "scientific_name": species.get('scientificName', species.get('scientificNameWithoutAuthor', 'Unknown')),
+                        "confidence": best_match.get('score', 0.0),
+                        "family": species.get('family', {}).get('scientificName', 'Unknown') if species.get('family') else 'Unknown'
                     }
-                
-                return {"success": False, "error": "No plant identified by PlantNet", "service": "plantnet"}
+                }
+            
+            return {"success": False, "error": "No plant identified by PlantNet", "service": "plantnet"}
                 
         except Exception as e:
             logger.exception("PlantNet identification failed")
@@ -320,14 +329,14 @@ class PlantIdentificationService:
     def identify_plant(self, image_path: str) -> Dict[str, Any]:
         """
         Main identification method with fallback chain:
-        1. Try Gemini (primary)
-        2. Try PlantID (fallback 1)
-        3. Try PlantNet (fallback 2)
+        1. Try PlantNet (primary - replaces gatekeeper for plant identification)
+        2. Try Gemini (fallback 1)
+        3. Try PlantID (fallback 2)
         """
-        # Try primary service (Gemini)
-        result = self.identify_with_gemini(image_path)
+        # Try primary service (PlantNet) - replaces gatekeeper for plant identification
+        result = self.identify_with_plantnet(image_path)
         if result.get('success'):
-            logger.info("Plant identification succeeded using Gemini")
+            logger.info("Plant identification succeeded using PlantNet (primary)")
             return {
                 "success": True,
                 "plant_data": result['data'],
@@ -335,10 +344,10 @@ class PlantIdentificationService:
                 "fallback_used": False
             }
         
-        # Try fallback 1 (PlantID)
-        result = self.identify_with_plantid(image_path)
+        # Try fallback 1 (Gemini)
+        result = self.identify_with_gemini(image_path)
         if result.get('success'):
-            logger.info("Plant identification succeeded using PlantID fallback")
+            logger.info("Plant identification succeeded using Gemini fallback")
             return {
                 "success": True,
                 "plant_data": result['data'],
@@ -347,10 +356,10 @@ class PlantIdentificationService:
                 "primary_failed": True
             }
         
-        # Try fallback 2 (PlantNet)
-        result = self.identify_with_plantnet(image_path)
+        # Try fallback 2 (PlantID)
+        result = self.identify_with_plantid(image_path)
         if result.get('success'):
-            logger.info("Plant identification succeeded using PlantNet fallback")
+            logger.info("Plant identification succeeded using PlantID fallback")
             return {
                 "success": True,
                 "plant_data": result['data'],
