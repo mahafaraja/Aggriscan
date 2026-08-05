@@ -113,18 +113,75 @@ export default function ScanResultScreen({
             <Text style={styles.primaryButtonText}>Treatment & Prevention</Text>
           </Pressable>
 
+          {/* Care Recommendations Section */}
           {isGreenSense && plantAnalysis.care_recommendations_generated && (
-            <Pressable
-              accessibilityRole="button"
-              style={({ pressed }) => [styles.reportButton, pressed && styles.pressed]}
-              onPress={() => {
-                // View PDF report - in a real app, this would open the PDF
-                alert('PDF Report: ' + (plantAnalysis.pdf_report.report_filename || 'Report generated'));
-              }}
-            >
-              <DocumentText size={16} color={theme.colors.darkTeal} variant="Bold" />
-              <Text style={styles.reportButtonText}>View PDF Report</Text>
-            </Pressable>
+            <View style={styles.careSection}>
+              <Text style={styles.careTitle}>Treatment & Prevention</Text>
+              
+              {plantAnalysis.care_recommendations.care_guide.disease_info && (
+                <View style={styles.careCard}>
+                  <Text style={styles.careDiseaseName}>
+                    {plantAnalysis.care_recommendations.care_guide.disease_info.name}
+                  </Text>
+                  <View style={styles.severityBadge}>
+                    <Text style={styles.severityText}>
+                      Severity: {plantAnalysis.care_recommendations.care_guide.disease_info.severity}
+                    </Text>
+                  </View>
+                  
+                  {plantAnalysis.care_recommendations.care_guide.disease_info.symptoms.length > 0 && (
+                    <View style={styles.careSubsection}>
+                      <Text style={styles.careSubtitle}>Symptoms:</Text>
+                      {plantAnalysis.care_recommendations.care_guide.disease_info.symptoms.map((symptom, idx) => (
+                        <Text key={idx} style={styles.careBullet}>• {symptom}</Text>
+                      ))}
+                    </View>
+                  )}
+                  
+                  {plantAnalysis.care_recommendations.care_guide.disease_info.immediate_actions.length > 0 && (
+                    <View style={styles.careSubsection}>
+                      <Text style={styles.careSubtitle}>Immediate Actions:</Text>
+                      {plantAnalysis.care_recommendations.care_guide.disease_info.immediate_actions.map((action, idx) => (
+                        <Text key={idx} style={styles.careBullet}>• {action}</Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+              
+              {plantAnalysis.care_recommendations.care_guide.treatment && (
+                <View style={styles.careCard}>
+                  <Text style={styles.careSubtitle}>Treatment Options:</Text>
+                  
+                  {plantAnalysis.care_recommendations.care_guide.treatment.chemical.length > 0 && (
+                    <View style={styles.careSubsection}>
+                      <Text style={styles.careSubtitle}>Chemical:</Text>
+                      {plantAnalysis.care_recommendations.care_guide.treatment.chemical.map((treatment, idx) => (
+                        <Text key={idx} style={styles.careBullet}>• {treatment}</Text>
+                      ))}
+                    </View>
+                  )}
+                  
+                  {plantAnalysis.care_recommendations.care_guide.treatment.organic.length > 0 && (
+                    <View style={styles.careSubsection}>
+                      <Text style={styles.careSubtitle}>Organic:</Text>
+                      {plantAnalysis.care_recommendations.care_guide.treatment.organic.map((treatment, idx) => (
+                        <Text key={idx} style={styles.careBullet}>• {treatment}</Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+              
+              {plantAnalysis.care_recommendations.care_guide.prevention.length > 0 && (
+                <View style={styles.careCard}>
+                  <Text style={styles.careSubtitle}>Prevention:</Text>
+                  {plantAnalysis.care_recommendations.care_guide.prevention.map((tip, idx) => (
+                    <Text key={idx} style={styles.careBullet}>• {tip}</Text>
+                  ))}
+                </View>
+              )}
+            </View>
           )}
 
           <Pressable
@@ -316,5 +373,62 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.82,
+  },
+  careSection: {
+    marginTop: theme.spacing.md,
+    padding: theme.spacing.md,
+    backgroundColor: '#F5F5F5',
+    borderRadius: theme.radius.card,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  careTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: theme.colors.darkTeal,
+    marginBottom: theme.spacing.md,
+  },
+  careCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 8,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  careDiseaseName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.colors.deepTeal,
+    marginBottom: theme.spacing.sm,
+  },
+  severityBadge: {
+    backgroundColor: theme.colors.warning || '#FF9800',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginBottom: theme.spacing.sm,
+  },
+  severityText: {
+    color: theme.colors.surface,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  careSubsection: {
+    marginTop: theme.spacing.sm,
+  },
+  careSubtitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.darkTeal,
+    marginBottom: 4,
+  },
+  careBullet: {
+    fontSize: 12,
+    color: theme.colors.textPrimary,
+    lineHeight: 18,
+    marginBottom: 2,
+    paddingLeft: 8,
   },
 });

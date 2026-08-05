@@ -43,33 +43,23 @@ export interface PlantAnalysisResponse {
   care_recommendations: {
     success: boolean;
     care_guide: {
-      watering: {
-        frequency: string;
-        amount: string;
-        tips: string[];
-      };
-      light: {
-        requirement: string;
-        hours_per_day: number;
-        tips: string[];
-      };
-      soil: {
-        type: string;
-        ph_range: string;
-        drainage: string;
-      };
-      fertilizing: {
-        frequency: string;
-        type: string;
-        season: string;
-      };
-      common_diseases: Array<{
+      disease_info: {
         name: string;
+        severity: string;
         symptoms: string[];
-        treatment: string;
-        prevention: string;
-      }>;
-      general_tips: string[];
+        immediate_actions: string[];
+      };
+      treatment: {
+        chemical: string[];
+        organic: string[];
+      };
+      prevention: string[];
+      monitoring: {
+        frequency: string;
+        signs_of_recovery: string[];
+        when_to_seek_help: string;
+      };
+      source?: string;
     };
     error?: string;
   };

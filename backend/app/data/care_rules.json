@@ -1,0 +1,1578 @@
+{
+  "banana": {
+    "Banana_BBW": {
+      "disease_name": "Banana Bacterial Wilt",
+      "severity": "High",
+      "symptoms": [
+        "Yellowing and wilting of leaves",
+        "Bacterial ooze from cut stems",
+        "Fruit ripening unevenly",
+        "Leaves breaking at the petiole"
+      ],
+      "immediate_actions": [
+        "Remove and destroy infected plants immediately",
+        "Disinfect tools after cutting infected plants",
+        "Avoid moving soil or plant material from infected areas"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply copper-based bactericides (Copper oxychloride)",
+          "Use antibiotics like streptomycin in early stages",
+          "Apply systemic acquired resistance activators"
+        ],
+        "organic": [
+          "Remove all infected plant parts",
+          "Improve drainage in the plantation",
+          "Use disease-free planting material"
+        ]
+      },
+      "prevention": [
+        "Use certified disease-free suckers",
+        "Practice crop rotation (avoid banana for 6+ months)",
+        "Remove volunteer banana plants",
+        "Disinfect tools between plants",
+        "Avoid wounding plants during cultivation"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new wilting symptoms",
+          "New leaves emerging healthy",
+          "No bacterial ooze from cuts"
+        ],
+        "when_to_seek_help": "If more than 10% of plants show symptoms"
+      }
+    },
+    "Banana_Black_Sigatoka": {
+      "disease_name": "Banana Black Sigatoka",
+      "severity": "High",
+      "symptoms": [
+        "Dark brown/black streaks on leaves",
+        "Leaves turning yellow and dying",
+        "Reduced fruit production",
+        "Spots merging to cover large leaf areas"
+      ],
+      "immediate_actions": [
+        "Remove heavily infected leaves",
+        "Improve air circulation in the plantation",
+        "Apply fungicides immediately"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides (e.g., triazoles)",
+          "Use protectant fungicides (Mancozeb, Chlorothalonil)",
+          "Rotate fungicide types to prevent resistance"
+        ],
+        "organic": [
+          "Remove infected leaves regularly",
+          "Improve plantation spacing",
+          "Use resistant varieties if available"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Maintain proper spacing (3m x 3m)",
+        "Ensure good drainage",
+        "Remove and destroy infected leaves",
+        "Apply preventive fungicide sprays"
+      ],
+      "monitoring": {
+        "frequency": "Bi-weekly inspection",
+        "signs_of_recovery": [
+          "New leaves emerging without spots",
+          "Existing spots not spreading",
+          "Leaves remaining green longer"
+        ],
+        "when_to_seek_help": "If disease spreads to more than 30% of leaves"
+      }
+    },
+    "Banana_Healthy": {
+      "disease_name": "Healthy Banana Plant",
+      "severity": "None",
+      "symptoms": [
+        "No visible disease symptoms",
+        "Leaves are green and turgid",
+        "Normal growth pattern"
+      ],
+      "immediate_actions": [
+        "Continue regular care routine",
+        "Monitor for early signs of disease"
+      ],
+      "treatment": {
+        "chemical": [],
+        "organic": []
+      },
+      "prevention": [
+        "Maintain proper fertilization",
+        "Regular watering schedule",
+        "Monitor for pests and diseases",
+        "Keep plantation clean and weed-free"
+      ],
+      "monitoring": {
+        "frequency": "Monthly inspection",
+        "signs_of_recovery": ["Plant remains healthy"],
+        "when_to_seek_help": "If any disease symptoms appear"
+      }
+    }
+  },
+  "bean": {
+    "Bean_Healthy": {
+      "disease_name": "Healthy Bean Plant",
+      "severity": "None",
+      "symptoms": [
+        "No visible disease symptoms",
+        "Leaves are green and healthy",
+        "Normal flowering and pod development"
+      ],
+      "immediate_actions": [
+        "Continue regular care routine",
+        "Monitor for early signs of disease"
+      ],
+      "treatment": {
+        "chemical": [],
+        "organic": []
+      },
+      "prevention": [
+        "Use certified disease-free seeds",
+        "Practice crop rotation (3-4 years)",
+        "Ensure proper plant spacing",
+        "Avoid overhead irrigation",
+        "Use resistant varieties"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": ["Plant remains healthy"],
+        "when_to_seek_help": "If any disease symptoms appear"
+      }
+    },
+    "Bean_Angular_Leaf_Spot": {
+      "disease_name": "Bean Angular Leaf Spot",
+      "severity": "Medium",
+      "symptoms": [
+        "Angular brown spots on leaves",
+        "Spots limited by leaf veins",
+        "Yellowing around spots",
+        "Premature leaf drop"
+      ],
+      "immediate_actions": [
+        "Remove infected leaves",
+        "Avoid working in fields when wet",
+        "Apply fungicides"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply copper-based fungicides",
+          "Use systemic fungicides (e.g., azoxystrobin)",
+          "Apply protectant fungicides preventively"
+        ],
+        "organic": [
+          "Remove and destroy infected plant debris",
+          "Improve air circulation",
+          "Use disease-free seeds"
+        ]
+      },
+      "prevention": [
+        "Use resistant varieties",
+        "Practice crop rotation",
+        "Avoid overhead irrigation",
+        "Maintain proper plant spacing",
+        "Use certified seeds"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new spots appearing",
+          "Existing spots not expanding",
+          "New growth appears healthy"
+        ],
+        "when_to_seek_help": "If more than 50% of leaves are affected"
+      }
+    },
+    "Bean_Rust": {
+      "disease_name": "Bean Rust",
+      "severity": "Medium",
+      "symptoms": [
+        "Small brown/rust-colored pustules on leaves",
+        "Pustules on undersides of leaves",
+        "Yellowing of leaves",
+        "Premature defoliation"
+      ],
+      "immediate_actions": [
+        "Remove infected leaves",
+        "Apply fungicides immediately",
+        "Reduce humidity around plants"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides (e.g., tebuconazole)",
+          "Use protectant fungicides (Mancozeb)",
+          "Apply at 7-10 day intervals"
+        ],
+        "organic": [
+          "Remove infected plant parts",
+          "Improve air circulation",
+          "Avoid overhead watering"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation",
+        "Ensure proper spacing",
+        "Avoid wetting leaves during irrigation",
+        "Use disease-free seeds"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new pustules forming",
+          "Existing pustules turning brown",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If disease spreads rapidly or affects pods"
+      }
+    }
+  },
+  "cassava": {
+    "Cassava_Healthy": {
+      "disease_name": "Healthy Cassava Plant",
+      "severity": "None",
+      "symptoms": [
+        "No visible disease symptoms",
+        "Leaves are green and healthy",
+        "Normal root development"
+      ],
+      "immediate_actions": [
+        "Continue regular care routine",
+        "Monitor for early signs of disease"
+      ],
+      "treatment": {
+        "chemical": [],
+        "organic": []
+      },
+      "prevention": [
+        "Use certified disease-free cuttings",
+        "Practice crop rotation",
+        "Remove infected plants",
+        "Use resistant varieties",
+        "Maintain field hygiene"
+      ],
+      "monitoring": {
+        "frequency": "Monthly inspection",
+        "signs_of_recovery": ["Plant remains healthy"],
+        "when_to_seek_help": "If any disease symptoms appear"
+      }
+    },
+    "Cassava_CMD": {
+      "disease_name": "Cassava Mosaic Disease",
+      "severity": "High",
+      "symptoms": [
+        "Mottled yellow and green leaf pattern",
+        "Leaf distortion and stunting",
+        "Reduced root size and yield",
+        "Plant stunting"
+      ],
+      "immediate_actions": [
+        "Remove and destroy infected plants",
+        "Control whitefly vectors",
+        "Use disease-free planting material"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply insecticides to control whitefly vectors",
+          "Use systemic insecticides (e.g., imidacloprid)"
+        ],
+        "organic": [
+          "Remove infected plants immediately",
+          "Use resistant varieties",
+          "Practice crop rotation"
+        ]
+      },
+      "prevention": [
+        "Use certified disease-free cuttings",
+        "Plant resistant varieties",
+        "Control whitefly populations",
+        "Remove infected plants promptly",
+        "Practice crop rotation"
+      ],
+      "monitoring": {
+        "frequency": "Bi-weekly inspection",
+        "signs_of_recovery": [
+          "New leaves showing normal color",
+          "No mottling on new growth",
+          "Plant growth resuming normally"
+        ],
+        "when_to_seek_help": "If more than 20% of plants show symptoms"
+      }
+    },
+    "Cassava_Brown_Streak": {
+      "disease_name": "Cassava Brown Streak Disease",
+      "severity": "High",
+      "symptoms": [
+        "Brown streaks on stems",
+        "Brown necrotic spots on roots",
+        "Leaf chlorosis and wilting",
+        "Root rot and constriction"
+      ],
+      "immediate_actions": [
+        "Remove infected plants",
+        "Use disease-free cuttings",
+        "Control whitefly vectors"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply insecticides for whitefly control",
+          "No direct cure available - focus on prevention"
+        ],
+        "organic": [
+          "Remove and burn infected plants",
+          "Use resistant varieties",
+          "Improve soil drainage"
+        ]
+      },
+      "prevention": [
+        "Use certified disease-free cuttings",
+        "Plant resistant varieties",
+        "Control whitefly vectors",
+        "Practice crop rotation",
+        "Avoid planting in infected areas"
+      ],
+      "monitoring": {
+        "frequency": "Bi-weekly inspection",
+        "signs_of_recovery": [
+          "No new stem streaks",
+          "Healthy new growth",
+          "Roots developing normally"
+        ],
+        "when_to_seek_help": "If roots show signs of rotting"
+      }
+    },
+    "Cassava_Green_Mottle": {
+      "disease_name": "Cassava Green Mottle",
+      "severity": "Medium",
+      "symptoms": [
+        "Green mottling on leaves",
+        "Leaf distortion",
+        "Stunted growth",
+        "Reduced yield"
+      ],
+      "immediate_actions": [
+        "Remove infected plants",
+        "Control virus vectors",
+        "Use clean planting material"
+      ],
+      "treatment": {
+        "chemical": [
+          "Control whitefly vectors with insecticides"
+        ],
+        "organic": [
+          "Remove infected plants",
+          "Use resistant varieties",
+          "Practice crop rotation"
+        ]
+      },
+      "prevention": [
+        "Use certified disease-free cuttings",
+        "Plant resistant varieties",
+        "Control whitefly populations",
+        "Remove infected plants"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "New leaves without mottling",
+          "Normal leaf development"
+        ],
+        "when_to_seek_help": "If symptoms spread rapidly"
+      }
+    },
+    "Cassava_Bacterial_Blight": {
+      "disease_name": "Cassava Bacterial Blight",
+      "severity": "High",
+      "symptoms": [
+        "Water-soaked spots on leaves",
+        "Leaf wilting and defoliation",
+        "Stem cankers",
+        "Bacterial ooze from cuts"
+      ],
+      "immediate_actions": [
+        "Remove infected plants",
+        "Disinfect tools",
+        "Avoid working in wet fields"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply copper-based bactericides",
+          "Use antibiotics in early stages"
+        ],
+        "organic": [
+          "Remove infected plants",
+          "Improve drainage",
+          "Use disease-free cuttings"
+        ]
+      },
+      "prevention": [
+        "Use certified disease-free cuttings",
+        "Practice crop rotation",
+        "Avoid wounding plants",
+        "Disinfect tools",
+        "Ensure good drainage"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new leaf spots",
+          "No stem cankers",
+          "Healthy new growth"
+        ],
+        "when_to_seek_help": "If disease spreads to neighboring plants"
+      }
+    }
+  },
+  "coffee": {
+    "Coffee___Healthy": {
+      "disease_name": "Healthy Coffee Plant",
+      "severity": "None",
+      "symptoms": [
+        "No visible disease symptoms",
+        "Leaves are green and healthy",
+        "Normal cherry development"
+      ],
+      "immediate_actions": [
+        "Continue regular care routine",
+        "Monitor for early signs of disease"
+      ],
+      "treatment": {
+        "chemical": [],
+        "organic": []
+      },
+      "prevention": [
+        "Maintain proper pruning",
+        "Ensure good air circulation",
+        "Regular fertilization",
+        "Monitor for pests"
+      ],
+      "monitoring": {
+        "frequency": "Monthly inspection",
+        "signs_of_recovery": ["Plant remains healthy"],
+        "when_to_seek_help": "If any disease symptoms appear"
+      }
+    },
+    "Coffee___Cerscospora": {
+      "disease_name": "Coffee Cerscospora Leaf Spot",
+      "severity": "Medium",
+      "symptoms": [
+        "Brown circular spots on leaves",
+        "Spots with yellow halos",
+        "Premature leaf drop",
+        "Reduced photosynthesis"
+      ],
+      "immediate_actions": [
+        "Remove infected leaves",
+        "Apply fungicides",
+        "Improve air circulation"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply copper-based fungicides",
+          "Use systemic fungicides (e.g., triazoles)",
+          "Apply at 2-3 week intervals"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Improve plantation spacing",
+          "Use resistant varieties"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Ensure proper spacing",
+        "Improve drainage",
+        "Avoid overhead irrigation",
+        "Remove fallen leaves"
+      ],
+      "monitoring": {
+        "frequency": "Bi-weekly inspection",
+        "signs_of_recovery": [
+          "No new spots forming",
+          "Existing spots not expanding",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If more than 40% of leaves are affected"
+      }
+    },
+    "Coffee___Leaf_Rust": {
+      "disease_name": "Coffee Leaf Rust",
+      "severity": "High",
+      "symptoms": [
+        "Orange-yellow powdery pustules on leaf undersides",
+        "Yellow spots on upper leaf surface",
+        "Premature leaf drop",
+        "Reduced cherry quality and yield"
+      ],
+      "immediate_actions": [
+        "Apply fungicides immediately",
+        "Remove heavily infected leaves",
+        "Improve plantation ventilation"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides (e.g., triazoles, strobilurins)",
+          "Use copper-based fungicides",
+          "Apply at 2-3 week intervals during rainy season"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Improve air circulation",
+          "Use shade management"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Apply preventive fungicide sprays",
+        "Maintain proper shade",
+        "Ensure good air circulation",
+        "Remove fallen leaves regularly"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection during rainy season",
+        "signs_of_recovery": [
+          "No new rust pustules",
+          "Existing pustules turning brown",
+          "New leaves healthy"
+        ],
+        "when_to_seek_help": "If infection exceeds 30% of canopy"
+      }
+    },
+    "Coffee___Miner": {
+      "disease_name": "Coffee Leaf Miner",
+      "severity": "Medium",
+      "symptoms": [
+        "Serpentine tunnels in leaves",
+        "Brown dried patches on leaves",
+        "Premature leaf drop",
+        "Reduced photosynthetic area"
+      ],
+      "immediate_actions": [
+        "Remove infected leaves",
+        "Apply insecticides",
+        "Monitor for spread"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic insecticides (e.g., imidacloprid)",
+          "Use contact insecticides",
+          "Apply at 2 week intervals"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Use yellow sticky traps",
+          "Encourage natural predators"
+        ]
+      },
+      "prevention": [
+        "Maintain healthy plants",
+        "Remove fallen leaves",
+        "Use yellow sticky traps",
+        "Encourage beneficial insects",
+        "Avoid excessive shade"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new tunnels in leaves",
+          "New leaves without damage",
+          "Existing tunnels not expanding"
+        ],
+        "when_to_seek_help": "If more than 50% of leaves show mining damage"
+      }
+    },
+    "Coffee___Phoma": {
+      "disease_name": "Coffee Phoma Leaf Spot",
+      "severity": "Medium",
+      "symptoms": [
+        "Dark brown to black spots on leaves",
+        "Spots with yellow halos",
+        "Leaf yellowing and drop",
+        "Stem cankers in severe cases"
+      ],
+      "immediate_actions": [
+        "Remove infected leaves",
+        "Apply fungicides",
+        "Improve air circulation"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply copper-based fungicides",
+          "Use systemic fungicides",
+          "Apply at 2-3 week intervals"
+        ],
+        "organic": [
+          "Remove infected plant parts",
+          "Improve plantation spacing",
+          "Use resistant varieties"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Ensure proper spacing",
+        "Improve drainage",
+        "Avoid overhead irrigation",
+        "Remove fallen leaves"
+      ],
+      "monitoring": {
+        "frequency": "Bi-weekly inspection",
+        "signs_of_recovery": [
+          "No new spots forming",
+          "Existing spots not expanding",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If disease spreads to stems"
+      }
+    }
+  },
+  "maize": {
+    "Maize___Healthy": {
+      "disease_name": "Healthy Maize Plant",
+      "severity": "None",
+      "symptoms": [
+        "No visible disease symptoms",
+        "Leaves are green and healthy",
+        "Normal ear development"
+      ],
+      "immediate_actions": [
+        "Continue regular care routine",
+        "Monitor for early signs of disease"
+      ],
+      "treatment": {
+        "chemical": [],
+        "organic": []
+      },
+      "prevention": [
+        "Use certified disease-free seeds",
+        "Practice crop rotation",
+        "Ensure proper plant spacing",
+        "Use resistant varieties",
+        "Maintain field hygiene"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": ["Plant remains healthy"],
+        "when_to_seek_help": "If any disease symptoms appear"
+      }
+    },
+    "Maize___Blight": {
+      "disease_name": "Maize Blight (Northern or Southern)",
+      "severity": "High",
+      "symptoms": [
+        "Elliptical gray/tan lesions on leaves",
+        "Lesions starting from lower leaves",
+        "Progressive leaf death",
+        "Reduced grain filling"
+      ],
+      "immediate_actions": [
+        "Remove infected plant debris",
+        "Apply fungicides",
+        "Improve air circulation"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides (e.g., triazoles, strobilurins)",
+          "Use protectant fungicides",
+          "Apply at tasseling and silking stages"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Practice crop rotation",
+          "Use resistant varieties"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation (2-3 years)",
+        "Ensure proper plant spacing",
+        "Use certified seeds",
+        "Avoid overhead irrigation"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new lesions forming",
+          "Existing lesions not expanding",
+          "Upper leaves remaining healthy"
+        ],
+        "when_to_seek_help": "If more than 50% of leaves show symptoms"
+      }
+    },
+    "Maize___Gray_Leaf_Spot": {
+      "disease_name": "Maize Gray Leaf Spot",
+      "severity": "High",
+      "symptoms": [
+        "Rectangular gray-brown lesions on leaves",
+        "Lesions bounded by leaf veins",
+        "Progressive leaf necrosis",
+        "Reduced photosynthesis and yield"
+      ],
+      "immediate_actions": [
+        "Remove infected debris",
+        "Apply fungicides",
+        "Improve air circulation"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides (e.g., azoxystrobin, pyraclostrobin)",
+          "Use at VT to R2 growth stages",
+          "Apply at 2-3 week intervals"
+        ],
+        "organic": [
+          "Remove infected plant material",
+          "Practice crop rotation",
+          "Use resistant varieties"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation",
+        "Ensure proper spacing",
+        "Remove crop residues",
+        "Avoid continuous maize cultivation"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new lesions",
+          "Existing lesions not expanding",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If lesions appear on upper leaves before tasseling"
+      }
+    },
+    "Maize___common_rust": {
+      "disease_name": "Maize Common Rust",
+      "severity": "Medium",
+      "symptoms": [
+        "Small reddish-brown pustules on leaves",
+        "Pustules on both leaf surfaces",
+        "Leaf yellowing",
+        "Premature leaf death in severe cases"
+      ],
+      "immediate_actions": [
+        "Apply fungicides",
+        "Remove heavily infected leaves",
+        "Monitor for spread"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides (e.g., triazoles)",
+          "Use at early infection stages",
+          "Apply at 2 week intervals"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Use resistant varieties",
+          "Practice crop rotation"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation",
+        "Ensure proper spacing",
+        "Monitor regularly during humid conditions"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new pustules forming",
+          "Existing pustules turning brown",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If more than 30% of leaves are affected"
+      }
+    }
+  },
+  "groundnuts": {
+    "Groundnuts_Healthy": {
+      "disease_name": "Healthy Groundnut Plant",
+      "severity": "None",
+      "symptoms": [
+        "No visible disease symptoms",
+        "Leaves are green and healthy",
+        "Normal peg and pod development"
+      ],
+      "immediate_actions": [
+        "Continue regular care routine",
+        "Monitor for early signs of disease"
+      ],
+      "treatment": {
+        "chemical": [],
+        "organic": []
+      },
+      "prevention": [
+        "Use certified disease-free seeds",
+        "Practice crop rotation (3-4 years)",
+        "Ensure proper plant spacing",
+        "Use resistant varieties"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": ["Plant remains healthy"],
+        "when_to_seek_help": "If any disease symptoms appear"
+      }
+    },
+    "Groundnuts_Early_Rust": {
+      "disease_name": "Groundnut Early Rust",
+      "severity": "Medium",
+      "symptoms": [
+        "Small orange-brown pustules on leaves",
+        "Pustules on leaf undersides",
+        "Leaf yellowing",
+        "Premature defoliation"
+      ],
+      "immediate_actions": [
+        "Apply fungicides",
+        "Remove infected leaves",
+        "Improve air circulation"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides (e.g., tebuconazole)",
+          "Use protectant fungicides",
+          "Apply at 2 week intervals"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Improve plant spacing",
+          "Use resistant varieties"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation",
+        "Ensure proper spacing",
+        "Avoid overhead irrigation",
+        "Use certified seeds"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new pustules",
+          "Existing pustules turning brown",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If more than 40% of leaves are affected"
+      }
+    },
+    "Groundnuts_Late_Rust": {
+      "disease_name": "Groundnut Late Rust",
+      "severity": "High",
+      "symptoms": [
+        "Large brown pustules on leaves and stems",
+        "Severe leaf yellowing",
+        "Premature defoliation",
+        "Significant yield loss"
+      ],
+      "immediate_actions": [
+        "Apply fungicides immediately",
+        "Remove heavily infected plants",
+        "Harvest early if possible"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides (e.g., triazoles)",
+          "Use at 7-10 day intervals",
+          "Apply until pods are mature"
+        ],
+        "organic": [
+          "Remove infected plants",
+          "Improve drainage",
+          "Use resistant varieties"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation",
+        "Apply preventive fungicides",
+        "Ensure proper spacing",
+        "Use certified seeds"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new pustules",
+          "Pustules turning brown and dry",
+          "Pods developing normally"
+        ],
+        "when_to_seek_help": "If disease appears before pod formation"
+      }
+    },
+    "Groundnuts_Early_Spot": {
+      "disease_name": "Groundnut Early Leaf Spot",
+      "severity": "Medium",
+      "symptoms": [
+        "Small brown circular spots on leaves",
+        "Spots with yellow halos",
+        "Leaf yellowing",
+        "Premature leaf drop"
+      ],
+      "immediate_actions": [
+        "Remove infected leaves",
+        "Apply fungicides",
+        "Improve air circulation"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply fungicides (e.g., chlorothalonil, mancozeb)",
+          "Use at 2-3 week intervals",
+          "Apply preventively"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Improve spacing",
+          "Use resistant varieties"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation",
+        "Ensure proper spacing",
+        "Remove crop residues",
+        "Use certified seeds"
+      ],
+      "monitoring": {
+        "frequency": "Bi-weekly inspection",
+        "signs_of_recovery": [
+          "No new spots",
+          "Existing spots not expanding",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If spots merge or cover large leaf areas"
+      }
+    },
+    "Groundnuts_Late_Spot": {
+      "disease_name": "Groundnut Late Leaf Spot",
+      "severity": "High",
+      "symptoms": [
+        "Dark brown to black spots on leaves",
+        "Spots merging to cover large areas",
+        "Severe defoliation",
+        "Significant yield loss"
+      ],
+      "immediate_actions": [
+        "Apply fungicides immediately",
+        "Remove infected debris",
+        "Monitor closely"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides",
+          "Use at 2 week intervals",
+          "Continue until harvest"
+        ],
+        "organic": [
+          "Remove infected plants",
+          "Practice crop rotation",
+          "Use resistant varieties"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation (3+ years)",
+        "Apply preventive fungicides",
+        "Ensure proper spacing",
+        "Remove crop residues"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new spots",
+          "Existing spots not expanding",
+          "Pods developing normally"
+        ],
+        "when_to_seek_help": "If defoliation exceeds 50% before pod maturity"
+      }
+    },
+    "Groundnuts_Rosette": {
+      "disease_name": "Groundnut Rosette Disease",
+      "severity": "High",
+      "symptoms": [
+        "Yellow mosaic pattern on leaves",
+        "Leaf curling and distortion",
+        "Stunted plant growth",
+        "Reduced pod formation"
+      ],
+      "immediate_actions": [
+        "Remove infected plants",
+        "Control aphid vectors",
+        "Use resistant varieties"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply insecticides to control aphids",
+          "Use systemic insecticides"
+        ],
+        "organic": [
+          "Remove infected plants",
+          "Use resistant varieties",
+          "Control aphid populations"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Use certified disease-free seeds",
+        "Control aphid vectors",
+        "Practice crop rotation",
+        "Remove infected plants promptly"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "New leaves without mosaic",
+          "Normal leaf development",
+          "No leaf curling"
+        ],
+        "when_to_seek_help": "If more than 20% of plants show symptoms"
+      }
+    }
+  },
+  "potato": {
+    "Potato_Healthy": {
+      "disease_name": "Healthy Potato Plant",
+      "severity": "None",
+      "symptoms": [
+        "No visible disease symptoms",
+        "Leaves are green and healthy",
+        "Normal tuber development"
+      ],
+      "immediate_actions": [
+        "Continue regular care routine",
+        "Monitor for early signs of disease"
+      ],
+      "treatment": {
+        "chemical": [],
+        "organic": []
+      },
+      "prevention": [
+        "Use certified disease-free seed potatoes",
+        "Practice crop rotation (3-4 years)",
+        "Ensure proper plant spacing",
+        "Use resistant varieties",
+        "Maintain field hygiene"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": ["Plant remains healthy"],
+        "when_to_seek_help": "If any disease symptoms appear"
+      }
+    },
+    "Potato_Late_Blight": {
+      "disease_name": "Potato Late Blight",
+      "severity": "High",
+      "symptoms": [
+        "Water-soaked spots on leaves",
+        "White fungal growth on leaf undersides",
+        "Rapid leaf necrosis",
+        "Tuber rot"
+      ],
+      "immediate_actions": [
+        "Apply fungicides immediately",
+        "Remove infected leaves",
+        "Harvest tubers early if necessary"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides (e.g., metalaxyl, mancozeb)",
+          "Use at 5-7 day intervals",
+          "Apply preventively during humid conditions"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Improve air circulation",
+          "Avoid overhead irrigation"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Apply preventive fungicides",
+        "Ensure proper spacing",
+        "Avoid overhead irrigation",
+        "Use certified seed potatoes",
+        "Monitor weather conditions (cool, humid)"
+      ],
+      "monitoring": {
+        "frequency": "Daily inspection during humid weather",
+        "signs_of_recovery": [
+          "No new water-soaked spots",
+          "No white fungal growth",
+          "New leaves healthy"
+        ],
+        "when_to_seek_help": "If blight appears - this is an emergency"
+      }
+    },
+    "Potato_Early_Blight": {
+      "disease_name": "Potato Early Blight",
+      "severity": "Medium",
+      "symptoms": [
+        "Brown concentric rings on leaves",
+        "Target-like spots",
+        "Starting from lower leaves",
+        "Progressive leaf yellowing"
+      ],
+      "immediate_actions": [
+        "Remove infected lower leaves",
+        "Apply fungicides",
+        "Improve plant nutrition"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply fungicides (e.g., chlorothalonil, mancozeb)",
+          "Use at 7-10 day intervals",
+          "Apply to both leaf surfaces"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Improve plant spacing",
+          "Ensure adequate fertilization"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation",
+        "Ensure proper spacing",
+        "Use certified seed potatoes",
+        "Maintain plant health with proper fertilization"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new target spots",
+          "Existing spots not expanding",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If disease spreads to upper leaves"
+      }
+    }
+  },
+  "tomato": {
+    "Tomato_Healthy": {
+      "disease_name": "Healthy Tomato Plant",
+      "severity": "None",
+      "symptoms": [
+        "No visible disease symptoms",
+        "Leaves are green and healthy",
+        "Normal fruit development"
+      ],
+      "immediate_actions": [
+        "Continue regular care routine",
+        "Monitor for early signs of disease"
+      ],
+      "treatment": {
+        "chemical": [],
+        "organic": []
+      },
+      "prevention": [
+        "Use certified disease-free seedlings",
+        "Practice crop rotation (3-4 years)",
+        "Ensure proper plant spacing",
+        "Use resistant varieties",
+        "Avoid overhead irrigation"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": ["Plant remains healthy"],
+        "when_to_seek_help": "If any disease symptoms appear"
+      }
+    },
+    "Tomato_Bacterial_Spot": {
+      "disease_name": "Tomato Bacterial Spot",
+      "severity": "Medium",
+      "symptoms": [
+        "Small water-soaked spots on leaves",
+        "Spots turning brown and necrotic",
+        "Leaf yellowing and drop",
+        "Fruit spots with raised edges"
+      ],
+      "immediate_actions": [
+        "Remove infected leaves",
+        "Avoid working in wet fields",
+        "Apply copper-based bactericides"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply copper-based bactericides (Copper hydroxide)",
+          "Use systemic acquired resistance activators",
+          "Apply at 7-10 day intervals"
+        ],
+        "organic": [
+          "Remove infected plant parts",
+          "Avoid overhead irrigation",
+          "Use disease-free seeds"
+        ]
+      },
+      "prevention": [
+        "Use certified disease-free seeds",
+        "Practice crop rotation",
+        "Avoid overhead irrigation",
+        "Disinfect tools",
+        "Ensure good air circulation"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new spots forming",
+          "Existing spots not expanding",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If spots appear on fruits"
+      }
+    },
+    "Tomato_Early_Blight": {
+      "disease_name": "Tomato Early Blight",
+      "severity": "Medium",
+      "symptoms": [
+        "Brown spots with concentric rings",
+        "Starting from lower leaves",
+        "Yellowing around spots",
+        "Progressive leaf death"
+      ],
+      "immediate_actions": [
+        "Remove infected lower leaves",
+        "Apply fungicides",
+        "Improve plant nutrition"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply fungicides (e.g., chlorothalonil, mancozeb)",
+          "Use systemic fungicides (e.g., azoxystrobin)",
+          "Apply at 7-10 day intervals"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Use copper-based fungicides",
+          "Improve plant spacing"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation",
+        "Ensure proper spacing",
+        "Use certified seedlings",
+        "Maintain plant health with proper fertilization",
+        "Mulch to prevent soil splash"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new target spots",
+          "Existing spots not expanding",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If disease spreads to upper leaves"
+      }
+    },
+    "Tomato_Late_Blight": {
+      "disease_name": "Tomato Late Blight",
+      "severity": "High",
+      "symptoms": [
+        "Water-soaked spots on leaves",
+        "White fungal growth on leaf undersides",
+        "Rapid leaf necrosis",
+        "Firm brown spots on fruits"
+      ],
+      "immediate_actions": [
+        "Apply fungicides immediately",
+        "Remove infected plants",
+        "Harvest ripe fruits immediately"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply systemic fungicides (e.g., metalaxyl, mancozeb)",
+          "Use at 5-7 day intervals",
+          "Apply preventively during cool, humid weather"
+        ],
+        "organic": [
+          "Remove infected plants",
+          "Improve air circulation",
+          "Avoid overhead irrigation"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Apply preventive fungicides",
+        "Ensure proper spacing",
+        "Avoid overhead irrigation",
+        "Monitor weather conditions",
+        "Use certified seedlings"
+      ],
+      "monitoring": {
+        "frequency": "Daily inspection during humid/cool weather",
+        "signs_of_recovery": [
+          "No new water-soaked spots",
+          "No white fungal growth",
+          "New leaves healthy"
+        ],
+        "when_to_seek_help": "If late blight appears - this is an emergency"
+      }
+    },
+    "Tomato_Leaf_Mold": {
+      "disease_name": "Tomato Leaf Mold",
+      "severity": "Medium",
+      "symptoms": [
+        "Yellow spots on upper leaf surface",
+        "Olive-green to brown mold on leaf undersides",
+        "Leaf curling and death",
+        "Reduced fruit production"
+      ],
+      "immediate_actions": [
+        "Remove infected leaves",
+        "Reduce humidity",
+        "Apply fungicides"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply fungicides (e.g., chlorothalonil, mancozeb)",
+          "Use at 7-10 day intervals",
+          "Focus on leaf undersides"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Improve air circulation",
+          "Reduce humidity"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Ensure proper spacing",
+        "Improve air circulation",
+        "Avoid overhead irrigation",
+        "Use certified seedlings"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new yellow spots",
+          "No mold growth",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If mold spreads to most leaves"
+      }
+    },
+    "Tomato_Septoria_Leaf_Spot": {
+      "disease_name": "Tomato Septoria Leaf Spot",
+      "severity": "Medium",
+      "symptoms": [
+        "Small circular spots with gray centers",
+        "Dark brown borders around spots",
+        "Black fruiting bodies in spots",
+        "Progressive leaf yellowing and drop"
+      ],
+      "immediate_actions": [
+        "Remove infected leaves",
+        "Apply fungicides",
+        "Avoid overhead irrigation"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply fungicides (e.g., chlorothalonil, mancozeb)",
+          "Use at 7-10 day intervals",
+          "Apply to both leaf surfaces"
+        ],
+        "organic": [
+          "Remove infected leaves",
+          "Use copper-based fungicides",
+          "Improve air circulation"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation",
+        "Ensure proper spacing",
+        "Use certified seedlings",
+        "Mulch to prevent soil splash",
+        "Remove crop debris"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new spots forming",
+          "Existing spots not expanding",
+          "New growth healthy"
+        ],
+        "when_to_seek_help": "If spots cover more than 50% of leaves"
+      }
+    },
+    "Tomato_Spider_Mites": {
+      "disease_name": "Tomato Spider Mites",
+      "severity": "Medium",
+      "symptoms": [
+        "Fine webbing on leaves",
+        "Yellow stippling on leaves",
+        "Leaves turning bronze/brown",
+        "Fine particles (mites) on leaf undersides"
+      ],
+      "immediate_actions": [
+        "Spray with water to dislodge mites",
+        "Apply miticides",
+        "Increase humidity"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply miticides (e.g., abamectin, spiromesifen)",
+          "Use at 5-7 day intervals",
+          "Apply to leaf undersides"
+        ],
+        "organic": [
+          "Spray with strong water stream",
+          "Use insecticidal soap",
+          "Release predatory mites",
+          "Increase humidity"
+        ]
+      },
+      "prevention": [
+        "Maintain plant health",
+        "Avoid dusty conditions",
+        "Keep plants well-watered",
+        "Monitor regularly",
+        "Use reflective mulches"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new webbing",
+          "Leaves turning green",
+          "No stippling on new growth"
+        ],
+        "when_to_seek_help": "If webbing covers most of the plant"
+      }
+    },
+    "Tomato_Target_Spot": {
+      "disease_name": "Tomato Target Spot",
+      "severity": "Medium",
+      "symptoms": [
+        "Circular brown spots with concentric rings",
+        "Spots on leaves, stems, and fruits",
+        "Lesions merging in severe cases",
+        "Fruit rot"
+      ],
+      "immediate_actions": [
+        "Remove infected leaves and fruits",
+        "Apply fungicides",
+        "Improve air circulation"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply fungicides (e.g., azoxystrobin, trifloxystrobin)",
+          "Use at 7-10 day intervals",
+          "Apply to all plant parts"
+        ],
+        "organic": [
+          "Remove infected parts",
+          "Improve spacing",
+          "Use copper-based fungicides"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Practice crop rotation",
+        "Ensure proper spacing",
+        "Use certified seedlings",
+        "Avoid overhead irrigation",
+        "Remove crop debris"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "No new spots",
+          "Existing spots not expanding",
+          "Fruits developing normally"
+        ],
+        "when_to_seek_help": "If spots appear on fruits"
+      }
+    },
+    "Tomato_Yellow_Leaf_Curl_Virus": {
+      "disease_name": "Tomato Yellow Leaf Curl Virus (TYLCV)",
+      "severity": "High",
+      "symptoms": [
+        "Upward curling of leaves",
+        "Yellowing of leaf margins",
+        "Stunted plant growth",
+        "Reduced fruit set and size"
+      ],
+      "immediate_actions": [
+        "Remove infected plants",
+        "Control whitefly vectors",
+        "Use reflective mulches"
+      ],
+      "treatment": {
+        "chemical": [
+          "Apply insecticides to control whiteflies",
+          "Use systemic insecticides (e.g., imidacloprid)",
+          "Apply at 7 day intervals"
+        ],
+        "organic": [
+          "Remove infected plants",
+          "Use reflective mulches",
+          "Control whitefly populations",
+          "Use yellow sticky traps"
+        ]
+      },
+      "prevention": [
+        "Plant resistant varieties",
+        "Use certified virus-free seedlings",
+        "Control whitefly vectors",
+        "Use reflective mulches",
+        "Remove infected plants promptly",
+        "Use insect-proof netting"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "New leaves without curling",
+          "Normal leaf development",
+          "No yellowing"
+        ],
+        "when_to_seek_help": "If more than 10% of plants show symptoms"
+      }
+    },
+    "Tomato_Mosaic_Virus": {
+      "disease_name": "Tomato Mosaic Virus (ToMV)",
+      "severity": "Medium",
+      "symptoms": [
+        "Mottled light and dark green pattern on leaves",
+        "Leaf curling and distortion",
+        "Stunted growth",
+        "Fruit malformation"
+      ],
+      "immediate_actions": [
+        "Remove infected plants",
+        "Disinfect tools and hands",
+        "Avoid smoking near plants"
+      ],
+      "treatment": {
+        "chemical": [
+          "No chemical cure - focus on prevention"
+        ],
+        "organic": [
+          "Remove infected plants",
+          "Disinfect tools",
+          "Use resistant varieties"
+        ]
+      },
+      "prevention": [
+        "Use certified virus-free seeds",
+        "Plant resistant varieties",
+        "Disinfect tools between plants",
+        "Wash hands after handling plants",
+        "Avoid smoking near plants",
+        "Control aphid vectors"
+      ],
+      "monitoring": {
+        "frequency": "Weekly inspection",
+        "signs_of_recovery": [
+          "New leaves without mottling",
+          "Normal leaf development",
+          "No leaf curling"
+        ],
+        "when_to_seek_help": "If more than 15% of plants show symptoms"
+      }
+    }
+  }
+}

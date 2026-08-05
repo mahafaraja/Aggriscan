@@ -407,150 +407,279 @@ class CareRecommendationService:
     def __init__(self, gemini_api_key: str):
         self.gemini_api_key = gemini_api_key
         self.gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}"
+        self.care_rules = self._load_care_rules()
+    
+    def _load_care_rules(self) -> Dict[str, Any]:
+        """Load care rules from JSON file"""
+        try:
+            import os
+            import json
+            rules_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "care_rules.json")
+            if os.path.exists(rules_path):
+                with open(rules_path, "r") as f:
+                    return json.load(f)
+            else:
+                logger.warning("Care rules file not found: %s", rules_path)
+                return {}
+        except Exception as e:
+            logger.error("Failed to load care rules: %s", str(e))
+            return {}
     
     def generate_care_guide(self, plant_data: Dict[str, Any], disease_info: Optional[Dict] = None) -> Dict[str, Any]:
         """
         Generates comprehensive care recommendations for the identified plant
+        Uses rule-based system as primary (no Gemini dependency)
         """
         try:
             plant_name = plant_data.get('plant_name', 'Unknown Plant')
             scientific_name = plant_data.get('scientific_name', 'Unknown')
             
-            prompt = f"""
-            Generate a comprehensive care guide for {plant_name} ({scientific_name}).
+            # Try Gemini first if available
+            if self.gemini_api_key:
+                try:
+                    gemini_result = self._try_gemini_care_guide(plant_name, scientific_name)
+                    if gemini_result.get('success'):
+                        return gemini_result
+                except Exception as e:
+                    logger.warning("Gemini care guide failed, using rule-based: %s", str(e))
             
-            Provide detailed recommendations in JSON format:
-            {{
-                "watering": {{
-                    "frequency": "how often",
-                    "amount": "how much",
-                    "tips": ["tip1", "tip2"]
-                }},
-                "light": {{
-                    "requirement": "full sun/partial shade/full shade",
-                    "hours_per_day": number,
-                    "tips": ["tip1", "tip2"]
-                }},
-                "soil": {{
-                    "type": "soil type",
-                    "ph_range": "pH range",
-                    "drainage": "drainage requirements"
-                }},
-                "fertilizing": {{
-                    "frequency": "how often",
-                    "type": "fertilizer type",
-                    "season": "best season"
-                }},
-                "common_diseases": [
-                    {{
-                        "name": "disease name",
-                        "symptoms": ["symptom1", "symptom2"],
-                        "treatment": "treatment description",
-                        "prevention": "prevention tips"
-                    }}
-                ],
-                "general_tips": ["tip1", "tip2", "tip3"]
-            }}
-            
-            Make it practical and specific to {plant_name}.
-            """
-            
-            payload = {
-                "contents": [{
-                    "parts": [{"text": prompt}]
-                }]
-            }
-            
-            response = requests.post(
-                self.gemini_url,
-                headers={"Content-Type": "application/json"},
-                json=payload,
-                timeout=30
-            )
-            
-            if response.status_code != 200:
-                return {"success": False, "error": f"Gemini API error: {response.status_code}"}
-            
-            result = response.json()
-            text_response = result['candidates'][0]['content']['parts'][0]['text']
-            
-            # Extract JSON
-            json_start = text_response.find('{')
-            json_end = text_response.rfind('}') + 1
-            if json_start != -1 and json_end > json_start:
-                care_data = json.loads(text_response[json_start:json_end])
-                return {
-                    "success": True,
-                    "care_guide": care_data
-                }
-            
-            return {"success": False, "error": "Could not parse care guide response"}
+            # Fallback to rule-based system
+            return self._get_rule_based_care_guide(plant_data, disease_info)
             
         except Exception as e:
             return {"success": False, "error": str(e)}
     
+    def _try_gemini_care_guide(self, plant_name: str, scientific_name: str) -> Dict[str, Any]:
+        """Try to generate care guide using Gemini API"""
+        prompt = f"""
+        Generate a comprehensive care guide for {plant_name} ({scientific_name}).
+        
+        Provide detailed recommendations in JSON format:
+        {{
+            "watering": {{
+                "frequency": "how often",
+                "amount": "how much",
+                "tips": ["tip1", "tip2"]
+            }},
+            "light": {{
+                "requirement": "full sun/partial shade/full shade",
+                "hours_per_day": number,
+                "tips": ["tip1", "tip2"]
+            }},
+            "soil": {{
+                "type": "soil type",
+                "ph_range": "pH range",
+                "drainage": "drainage requirements"
+            }},
+            "fertilizing": {{
+                "frequency": "how often",
+                "type": "fertilizer type",
+                "season": "best season"
+            }},
+            "common_diseases": [
+                {{
+                    "name": "disease name",
+                    "symptoms": ["symptom1", "symptom2"],
+                    "treatment": "treatment description",
+                    "prevention": "prevention tips"
+                }}
+            ],
+            "general_tips": ["tip1", "tip2", "tip3"]
+        }}
+        
+        Make it practical and specific to {plant_name}.
+        """
+        
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }]
+        }
+        
+        response = requests.post(
+            self.gemini_url,
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code != 200:
+            return {"success": False, "error": f"Gemini API error: {response.status_code}"}
+        
+        result = response.json()
+        text_response = result['candidates'][0]['content']['parts'][0]['text']
+        
+        # Extract JSON
+        json_start = text_response.find('{')
+        json_end = text_response.rfind('}') + 1
+        if json_start != -1 and json_end > json_start:
+            care_data = json.loads(text_response[json_start:json_end])
+            return {
+                "success": True,
+                "care_guide": care_data,
+                "source": "gemini"
+            }
+        
+        return {"success": False, "error": "Could not parse care guide response"}
+    
+    def _get_rule_based_care_guide(self, plant_data: Dict[str, Any], disease_info: Optional[Dict] = None) -> Dict[str, Any]:
+        """
+        Generate care guide using rule-based system (no AI required)
+        """
+        try:
+            plant_name = plant_data.get('plant_name', 'Unknown Plant')
+            scientific_name = plant_data.get('scientific_name', 'Unknown')
+            
+            # Determine crop type from plant name or scientific name
+            crop_type = self._determine_crop_type(plant_name, scientific_name)
+            
+            # Get disease-specific care rules
+            disease_label = disease_info.get('disease_label', 'Healthy') if disease_info else 'Healthy'
+            disease_rules = self._get_disease_rules(crop_type, disease_label)
+            
+            if not disease_rules:
+                # Return generic care guide if no specific rules found
+                return self._get_generic_care_guide(plant_name, scientific_name)
+            
+            # Build comprehensive care guide from rules
+            care_guide = {
+                "disease_info": {
+                    "name": disease_rules.get('disease_name', disease_label),
+                    "severity": disease_rules.get('severity', 'Unknown'),
+                    "symptoms": disease_rules.get('symptoms', []),
+                    "immediate_actions": disease_rules.get('immediate_actions', [])
+                },
+                "treatment": disease_rules.get('treatment', {}),
+                "prevention": disease_rules.get('prevention', []),
+                "monitoring": disease_rules.get('monitoring', {}),
+                "source": "rule_based"
+            }
+            
+            return {
+                "success": True,
+                "care_guide": care_guide
+            }
+            
+        except Exception as e:
+            logger.error("Rule-based care guide generation failed: %s", str(e))
+            return {"success": False, "error": str(e)}
+    
+    def _determine_crop_type(self, plant_name: str, scientific_name: str) -> str:
+        """Determine crop type from plant name or scientific name"""
+        name_lower = plant_name.lower()
+        sci_lower = scientific_name.lower()
+        
+        crop_keywords = {
+            "banana": ["banana", "musa"],
+            "bean": ["bean", "phaseolus", "vigna"],
+            "cassava": ["cassava", "manihot"],
+            "coffee": ["coffee", "coffea"],
+            "maize": ["maize", "corn", "zea"],
+            "groundnuts": ["groundnut", "peanut", "arachis"],
+            "potato": ["potato", "solanum tuberosum"],
+            "tomato": ["tomato", "solanum lycopersicum"]
+        }
+        
+        for crop, keywords in crop_keywords.items():
+            if any(kw in name_lower or kw in sci_lower for kw in keywords):
+                return crop
+        
+        return "unknown"
+    
+    def _get_disease_rules(self, crop_type: str, disease_label: str) -> Optional[Dict[str, Any]]:
+        """Get disease-specific care rules"""
+        if not self.care_rules or crop_type not in self.care_rules:
+            return None
+        
+        crop_rules = self.care_rules[crop_type]
+        
+        # Try exact match first
+        if disease_label in crop_rules:
+            return crop_rules[disease_label]
+        
+        # Try case-insensitive match
+        disease_label_lower = disease_label.lower()
+        for key, value in crop_rules.items():
+            if key.lower() == disease_label_lower:
+                return value
+        
+        # If disease not found, return healthy plant rules
+        healthy_key = f"{crop_type.capitalize()}_Healthy"
+        if healthy_key in crop_rules:
+            return crop_rules[healthy_key]
+        
+        return None
+    
+    def _get_generic_care_guide(self, plant_name: str, scientific_name: str) -> Dict[str, Any]:
+        """Generate generic care guide when no specific rules are available"""
+        return {
+            "success": True,
+            "care_guide": {
+                "disease_info": {
+                    "name": "General Care Guide",
+                    "severity": "N/A",
+                    "symptoms": ["No specific disease detected"],
+                    "immediate_actions": ["Continue regular care routine"]
+                },
+                "treatment": {
+                    "chemical": [],
+                    "organic": []
+                },
+                "prevention": [
+                    "Use certified disease-free planting material",
+                    "Practice crop rotation",
+                    "Ensure proper plant spacing",
+                    "Maintain good field hygiene",
+                    "Monitor regularly for early signs of disease"
+                ],
+                "monitoring": {
+                    "frequency": "Weekly inspection",
+                    "signs_of_recovery": ["Plant remains healthy"],
+                    "when_to_seek_help": "If any disease symptoms appear"
+                },
+                "source": "generic"
+            }
+        }
+    
     def generate_treatment_plan(self, plant_name: str, disease: str, severity: str) -> Dict[str, Any]:
         """
         Generates specific treatment plan for identified disease
+        Uses rule-based system (no Gemini dependency)
         """
         try:
-            prompt = f"""
-            Generate a treatment plan for {plant_name} with {disease} (severity: {severity}).
+            # Determine crop type
+            crop_type = self._determine_crop_type(plant_name, plant_name)
             
-            Provide in JSON format:
-            {{
-                "immediate_actions": ["action1", "action2"],
-                "treatment_steps": [
-                    {{
-                        "step": 1,
-                        "action": "description",
-                        "products": ["product1", "product2"],
-                        "duration": "how long"
-                    }}
-                ],
-                "organic_treatments": ["option1", "option2"],
-                "chemical_treatments": ["option1", "option2"],
-                "prevention": ["prevention1", "prevention2"],
-                "monitoring": {{
-                    "frequency": "how often to check",
-                    "signs_of_recovery": ["sign1", "sign2"],
-                    "when_to_seek_help": "indicators"
-                }}
-            }}
+            # Get disease-specific rules
+            disease_rules = self._get_disease_rules(crop_type, disease)
             
-            Make it practical and actionable for farmers.
-            """
-            
-            payload = {
-                "contents": [{
-                    "parts": [{"text": prompt}]
-                }]
-            }
-            
-            response = requests.post(
-                self.gemini_url,
-                headers={"Content-Type": "application/json"},
-                json=payload,
-                timeout=30
-            )
-            
-            if response.status_code != 200:
-                return {"success": False, "error": f"Gemini API error: {response.status_code}"}
-            
-            result = response.json()
-            text_response = result['candidates'][0]['content']['parts'][0]['text']
-            
-            # Extract JSON
-            json_start = text_response.find('{')
-            json_end = text_response.rfind('}') + 1
-            if json_start != -1 and json_end > json_start:
-                treatment_data = json.loads(text_response[json_start:json_end])
+            if not disease_rules:
                 return {
-                    "success": True,
-                    "treatment_plan": treatment_data
+                    "success": False,
+                    "error": f"No treatment rules available for {disease}"
                 }
             
-            return {"success": False, "error": "Could not parse treatment plan response"}
+            # Build treatment plan from rules
+            treatment_plan = {
+                "immediate_actions": disease_rules.get('immediate_actions', []),
+                "treatment_steps": [
+                    {
+                        "step": 1,
+                        "action": "Apply chemical treatments" if disease_rules.get('treatment', {}).get('chemical') else "Apply organic treatments",
+                        "products": disease_rules.get('treatment', {}).get('chemical', []) or disease_rules.get('treatment', {}).get('organic', []),
+                        "duration": "As per product instructions"
+                    }
+                ],
+                "organic_treatments": disease_rules.get('treatment', {}).get('organic', []),
+                "chemical_treatments": disease_rules.get('treatment', {}).get('chemical', []),
+                "prevention": disease_rules.get('prevention', []),
+                "monitoring": disease_rules.get('monitoring', {})
+            }
+            
+            return {
+                "success": True,
+                "treatment_plan": treatment_plan
+            }
             
         except Exception as e:
             return {"success": False, "error": str(e)}

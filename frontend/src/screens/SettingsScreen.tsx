@@ -83,6 +83,11 @@ function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionCard}>
+            <Text style={styles.actionText}>Export Last Report as PDF</Text>
+            <Text style={styles.actionArrow}>→</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionCard}>
             <Text style={styles.actionText}>Manage Storage</Text>
             <Text style={styles.actionArrow}>→</Text>
           </TouchableOpacity>

@@ -142,12 +142,13 @@ def analyze_plant_image(file: UploadFile = File(...)):
         # Generate treatment plan if disease is detected
         treatment_result = {"success": False, "note": "No disease detected or treatment not applicable"}
         
-        # Step 4: PDF Report Generation
-        logger.info("Analyze plant step 4: generating PDF report")
-        pdf_service = get_pdf_report_generator()
-        report_result = pdf_service.generate_report(analysis_result)
-        analysis_result["pdf_report"] = report_result
-        analysis_result["pdf_report_generated"] = report_result.get("success", False)
+        # Note: PDF generation is now manual - triggered by user via export button
+        # This reduces server load and storage costs
+        analysis_result["pdf_report"] = {
+            "success": False,
+            "note": "PDF generation is manual. Use the export button in settings."
+        }
+        analysis_result["pdf_report_generated"] = False
         
         # Add summary for frontend
         analysis_result["summary"] = {
@@ -157,7 +158,7 @@ def analyze_plant_image(file: UploadFile = File(...)):
             "service_used": identification_result.get("service_used", "unknown"),
             "fallback_used": identification_result.get("fallback_used", False),
             "care_guide_available": care_result.get("success", False),
-            "report_available": report_result.get("success", False)
+            "report_available": False
         }
         
         return analysis_result
@@ -217,4 +218,37 @@ def get_outbreak_hotspots(
     return crud.detect_outbreak_hotspots(
         db=db, radius_meters=radius_meters, threshold_count=threshold_count
     )
+
+
+@router.post("/export-pdf")
+def export_analysis_pdf(
+    request: dict,
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Manually generate PDF report from analysis data.
+    This endpoint is called when user clicks "Export as PDF" button.
+    """
+    try:
+        from ..services.plant_identification import get_pdf_report_generator
+        
+        pdf_service = get_pdf_report_generator()
+        report_result = pdf_service.generate_report(request)
+        
+        if report_result.get("success"):
+            return {
+                "success": True,
+                "report_filename": report_result.get("report_filename"),
+                "download_url": f"/api/v1/reports/download-pdf/{report_result.get('report_filename')}"
+            }
+        else:
+            return {
+                "success": False,
+                "error": report_result.get("error", "PDF generation failed")
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
