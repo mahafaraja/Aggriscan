@@ -42,19 +42,53 @@ export interface PlantAnalysisResponse {
   };
   care_recommendations: {
     success: boolean;
+    // The backend can return care data in two shapes depending on which
+    // service produced it:
+    //   - Green-Sense / Gemini shape:  watering, light, soil, ...
+    //   - Rule-based / diagnosis shape: disease_info, treatment, prevention, ...
+    // All fields stay optional so both shapes type-check and render safely.
     care_guide: {
-      disease_info: {
+      // Green-Sense / Gemini shape
+      watering?: {
+        frequency: string;
+        amount: string;
+        tips: string[];
+      };
+      light?: {
+        requirement: string;
+        hours_per_day: number;
+        tips: string[];
+      };
+      soil?: {
+        type: string;
+        ph_range: string;
+        drainage: string;
+      };
+      fertilizing?: {
+        frequency: string;
+        type: string;
+        season: string;
+      };
+      common_diseases?: Array<{
+        name: string;
+        symptoms: string[];
+        treatment: string;
+        prevention: string;
+      }>;
+      general_tips?: string[];
+      // Rule-based / legacy diagnosis shape
+      disease_info?: {
         name: string;
         severity: string;
         symptoms: string[];
         immediate_actions: string[];
       };
-      treatment: {
+      treatment?: {
         chemical: string[];
         organic: string[];
       };
-      prevention: string[];
-      monitoring: {
+      prevention?: string[];
+      monitoring?: {
         frequency: string;
         signs_of_recovery: string[];
         when_to_seek_help: string;

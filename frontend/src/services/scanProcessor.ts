@@ -27,6 +27,7 @@ export async function processScanImage({
   longitude,
 }: ProcessScanInput): Promise<ScanPayload> {
   try {
+    const scanStartTime = Date.now();
     // Try the new Green-Sense plant analysis endpoint first
     const analysisResponse = await analyzePlantWithBackend(imageUri);
     
@@ -63,6 +64,7 @@ export async function processScanImage({
         severity: 'Low',
         offline_created_at: scannedAt,
         image_url: imageUri,
+        processing_time_ms: Date.now() - scanStartTime,
       });
 
       return {
@@ -102,6 +104,7 @@ export async function processScanImage({
         severity: backendPrediction.severity,
         offline_created_at: scannedAt,
         image_url: imageUri,
+        processing_time_ms: Date.now() - scanStartTime,
       });
 
       return {

@@ -15,6 +15,7 @@ export interface LocalReport {
   severity: string;
   offline_created_at: string;
   image_url?: string;
+  processing_time_ms?: number;
   sync_status: 'PENDING' | 'SYNCED';
 }
 
@@ -32,9 +33,16 @@ export const initSQLiteDatabase = async (): Promise<void> => {
         severity TEXT NOT NULL,
         offline_created_at TEXT NOT NULL,
         image_url TEXT,
+        processing_time_ms REAL,
         sync_status TEXT DEFAULT 'PENDING'
       );`
     );
+    // Migration for existing installs: add processing_time_ms column if absent
+    try {
+      db.runSync(`ALTER TABLE local_reports ADD COLUMN processing_time_ms REAL;`);
+    } catch (e) {
+      // Column already exists — safe to ignore
+    }
     console.log("SQLite: local_reports table initialized.");
   } catch (error) {
     console.error("SQLite initialization error:", error);
@@ -48,8 +56,8 @@ export const saveOfflineReport = async (report: Omit<LocalReport, 'sync_status'>
     db.withTransactionSync(() => {
       db.runSync(
         `INSERT INTO local_reports 
-        (id, crop_type, disease_label, confidence_score, latitude, longitude, severity, offline_created_at, image_url, sync_status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING');`,
+        (id, crop_type, disease_label, confidence_score, latitude, longitude, severity, offline_created_at, image_url, processing_time_ms, sync_status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING');`,
         [
           report.id,
           report.crop_type,
@@ -59,7 +67,8 @@ export const saveOfflineReport = async (report: Omit<LocalReport, 'sync_status'>
           report.longitude,
           report.severity,
           report.offline_created_at,
-          report.image_url || null
+          report.image_url || null,
+          report.processing_time_ms || null
         ]
       );
     });

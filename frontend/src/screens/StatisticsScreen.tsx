@@ -13,6 +13,11 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
   const [totalScans, setTotalScans] = useState<number>(0);
   const [pendingSync, setPendingSync] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [diseasesDetected, setDiseasesDetected] = useState<number>(0);
+  const [diseasesList, setDiseasesList] = useState<{ name: string; count: number }[]>([]);
+  const [healthyCount, setHealthyCount] = useState<number>(0);
+  const [avgConfidence, setAvgConfidence] = useState<number>(0);
+  const [avgProcessingTime, setAvgProcessingTime] = useState<number>(0);
 
   const loadDashboardStats = async () => {
     try {
@@ -21,6 +26,43 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
       
       const pendingCount = history.filter(r => r.sync_status === 'PENDING').length;
       setPendingSync(pendingCount);
+
+      // Real statistics derived from the stored scans
+      const nonHealthy = history.filter(
+        (r) => !(r.disease_label || '').toLowerCase().includes('healthy')
+      );
+      const healthy = history.length - nonHealthy.length;
+      setHealthyCount(healthy);
+
+      // Distinct diseases actually detected
+      const diseaseMap = new Map<string, number>();
+      nonHealthy.forEach((r) => {
+        const key = (r.disease_label || 'Unknown').trim();
+        diseaseMap.set(key, (diseaseMap.get(key) || 0) + 1);
+      });
+      setDiseasesDetected(diseaseMap.size);
+      setDiseasesList(
+        Array.from(diseaseMap.entries())
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count)
+      );
+
+      // Average confidence across scans
+      if (history.length > 0) {
+        const confSum = history.reduce((sum, r) => sum + (r.confidence_score || 0), 0);
+        setAvgConfidence(confSum / history.length);
+      } else {
+        setAvgConfidence(0);
+      }
+
+      // Average processing time (ms) across scans
+      const timed = history.filter((r) => r.processing_time_ms && r.processing_time_ms > 0);
+      if (timed.length > 0) {
+        const timeSum = timed.reduce((sum, r) => sum + (r.processing_time_ms || 0), 0);
+        setAvgProcessingTime(timeSum / timed.length);
+      } else {
+        setAvgProcessingTime(0);
+      }
     } catch (error) {
       console.error("Dashboard: Error fetching logs", error);
     }
@@ -95,24 +137,47 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
         {/* Additional Stats */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Performance Metrics</Text>
-          
+
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>Diagnostic Accuracy</Text>
-            <Text style={styles.metricValue}>94.5%</Text>
+            <Text style={styles.metricValue}>
+              {avgConfidence > 0 ? `${(avgConfidence * 100).toFixed(1)}%` : '—'}
+            </Text>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '94.5%' }]} />
+              <View style={[styles.progressFill, { width: `${Math.min(100, Math.round(avgConfidence * 100))}%` }]} />
             </View>
           </View>
 
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>Avg. Processing Time</Text>
-            <Text style={styles.metricValue}>2.3s</Text>
+            <Text style={styles.metricValue}>
+              {avgProcessingTime > 0 ? `${(avgProcessingTime / 1000).toFixed(1)}s` : '—'}
+            </Text>
           </View>
 
           <View style={styles.metricCard}>
             <Text style={styles.metricLabel}>Diseases Detected</Text>
-            <Text style={styles.metricValue}>12 Types</Text>
+            <Text style={styles.metricValue}>
+              {diseasesDetected} {diseasesDetected === 1 ? 'Type' : 'Types'}
+            </Text>
           </View>
+
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Healthy vs Diseased Scans</Text>
+            <Text style={styles.metricValue}>{healthyCount} / {totalScans - healthyCount}</Text>
+          </View>
+
+          {diseasesList.length > 0 && (
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>Detected Diseases Breakdown</Text>
+              {diseasesList.map((d) => (
+                <View key={d.name} style={styles.diseaseRow}>
+                  <Text style={styles.diseaseName}>{d.name.replace(/_/g, ' ')}</Text>
+                  <Text style={styles.diseaseCount}>{d.count}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Quick Actions */}
@@ -273,6 +338,27 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: theme.colors.deepTeal,
     marginBottom: theme.spacing.sm,
+  },
+  diseaseRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.sm / 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border,
+  },
+  diseaseName: {
+    fontSize: theme.typography.body.fontSize,
+    color: theme.colors.deepTeal,
+    fontWeight: '600',
+    flex: 1,
+    textTransform: 'capitalize',
+  },
+  diseaseCount: {
+    fontSize: theme.typography.body.fontSize,
+    fontWeight: '800',
+    color: theme.colors.darkTeal,
+    marginLeft: theme.spacing.md,
   },
   progressBar: {
     width: '100%',

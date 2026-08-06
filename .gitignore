@@ -1,2 +1,17 @@
-# Environment files
+# Environment / secrets (frontend)
 frontend/.eas.env
+frontend/.env.local
+frontend/.env.*
+
+# Native Expo build outputs
+frontend/android/
+
+# Generated PDF reports from the backend
+backend/app/reports/
+
+# Nested helper repo (Render MCP server) - not part of the app
+render-mcp-server/
+
+# Local test / debug output
+*.log
+test_output.txt

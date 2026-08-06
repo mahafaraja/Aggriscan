@@ -173,10 +173,10 @@ export default function ScanResultScreen({
                 </View>
               )}
               
-              {plantAnalysis.care_recommendations.care_guide.prevention.length > 0 && (
+              {plantAnalysis.care_recommendations.care_guide.prevention && plantAnalysis.care_recommendations.care_guide.prevention.length > 0 && (
                 <View style={styles.careCard}>
                   <Text style={styles.careSubtitle}>Prevention:</Text>
-                  {plantAnalysis.care_recommendations.care_guide.prevention.map((tip, idx) => (
+                  {plantAnalysis.care_recommendations.care_guide.prevention!.map((tip, idx) => (
                     <Text key={idx} style={styles.careBullet}>• {tip}</Text>
                   ))}
                 </View>

@@ -8,6 +8,7 @@ import {
   Logout 
 } from 'iconsax-react-native';
 import { theme } from '../theme/Index';
+import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75;
@@ -20,7 +21,17 @@ interface SidebarProps {
 }
 
 function Sidebar({ visible, onClose, onNavigate, onLogout }: SidebarProps) {
+  const [userPhone, setUserPhone] = React.useState<string>('Not available');
   const slideAnim = React.useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
+
+  React.useEffect(() => {
+    // Use the same phone number stored for the Profile/Account settings
+    SecureStore.getItemAsync('user_phone')
+      .then((phone) => {
+        if (phone) setUserPhone(phone);
+      })
+      .catch(() => {});
+  }, []);
 
   React.useEffect(() => {
     if (visible) {
@@ -82,7 +93,7 @@ function Sidebar({ visible, onClose, onNavigate, onLogout }: SidebarProps) {
           </View>
           <View style={styles.userDetails}>
             <Text style={styles.userName}>Agriscan User</Text>
-            <Text style={styles.userPhone}>+256 700 000 000</Text>
+            <Text style={styles.userPhone}>{userPhone || 'Not available'}</Text>
           </View>
         </View>
 
