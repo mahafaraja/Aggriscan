@@ -319,7 +319,7 @@ def test_backend_health():
     # Try local backend first
     base_urls = [
         "http://127.0.0.1:8000",
-        "https://agriscan.onrender.com"
+        "https://aggriscan.onrender.com"
     ]
     
     for base_url in base_urls:
@@ -358,7 +358,7 @@ def test_analyze_plant_endpoint():
     
     base_urls = [
         "http://127.0.0.1:8000",
-        "https://agriscan.onrender.com"
+        "https://aggriscan.onrender.com"
     ]
     
     for base_url in base_urls:
@@ -425,7 +425,7 @@ def test_diagnose_endpoint():
     
     base_urls = [
         "http://127.0.0.1:8000",
-        "https://agriscan.onrender.com"
+        "https://aggriscan.onrender.com"
     ]
     
     for base_url in base_urls:
@@ -470,7 +470,7 @@ def test_report_sync_nearby_hotspots():
     
     base_urls = [
         "http://127.0.0.1:8000",
-        "https://agriscan.onrender.com"
+        "https://aggriscan.onrender.com"
     ]
     
     for base_url in base_urls:

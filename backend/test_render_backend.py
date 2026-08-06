@@ -1,12 +1,12 @@
 """
 Test script for Render backend endpoints.
-Tests the deployed backend on agriscan.onrender.com
+Tests the deployed backend on aggriscan.onrender.com
 """
 import requests
 import json
 
 # Render backend URL
-BASE_URL = "https://agriscan.onrender.com"
+BASE_URL = "https://aggriscan.onrender.com"
 
 def test_health():
     """Test health endpoint"""

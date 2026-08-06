@@ -191,7 +191,7 @@ The frontend is already configured to use the backend endpoints. Ensure the API 
 EXPO_PUBLIC_API_BASE_URL=http://localhost:8000
 
 // For production
-EXPO_PUBLIC_API_BASE_URL=https://agriscan.onrender.com
+EXPO_PUBLIC_API_BASE_URL=https://aggriscan.onrender.com
 ```
 
 ### 5. Start Frontend

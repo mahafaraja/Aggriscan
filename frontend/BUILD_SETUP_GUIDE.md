@@ -306,7 +306,7 @@ git push origin v1.0.1
 
 Create `frontend/.env`:
 ```env
-EXPO_PUBLIC_API_BASE_URL=https://agriscan.onrender.com
+EXPO_PUBLIC_API_BASE_URL=https://aggriscan.onrender.com
 ```
 
 ### Backend `.env` file

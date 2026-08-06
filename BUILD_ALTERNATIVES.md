@@ -262,7 +262,7 @@ FASTLANE_PASSWORD=app-specific-password (iOS only)
 ### Required for App
 ```env
 # frontend/.env
-EXPO_PUBLIC_API_BASE_URL=https://agriscan.onrender.com
+EXPO_PUBLIC_API_BASE_URL=https://aggriscan.onrender.com
 
 # backend/.env
 DATABASE_URL=your_database_url

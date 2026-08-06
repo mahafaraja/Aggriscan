@@ -129,7 +129,7 @@ frontend/
 
 Create a `.env` file in the frontend directory:
 ```env
-EXPO_PUBLIC_API_BASE_URL=https://agriscan.onrender.com
+EXPO_PUBLIC_API_BASE_URL=https://aggriscan.onrender.com
 ```
 
 This overrides the default API URL in all environments.
@@ -149,7 +149,7 @@ This overrides the default API URL in all environments.
 ### Network Errors
 - Verify API_BASE_URL in src/config/api.ts
 - For development: Uses localhost (10.0.2.2 for Android emulator)
-- For production: Uses https://agriscan.onrender.com
+- For production: Uses https://aggriscan.onrender.com
 - Network security config allows cleartext for localhost
 
 ## Next Steps
