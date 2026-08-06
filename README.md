@@ -480,7 +480,35 @@ npm install
 npx expo start
 ```
 
-### 5. Run on Device
+### 5. Build the Android App (APK)
+
+From the repo root, run the official build script. It installs JS dependencies,
+type-checks the app, and compiles a signed release APK with Gradle:
+
+```bat
+build-release-apk.bat
+```
+
+Output: `frontend\android\app\build\outputs\apk\release\app-release.apk`
+
+> **Prerequisites:** Node.js 20+ / npm, Android SDK on `PATH`, and `JAVA_HOME` pointing at JDK 17.
+> **Skip JS steps** (already installed / only recompiling native) with: `build-release-apk.bat --skip-js`
+
+### 6. Install the APK on a device
+
+After building, plug in an Android phone (enable USB debugging) and run:
+
+```bat
+install-apk.bat
+```
+
+This installs the APK via `adb` and launches the app. It builds the APK
+automatically if it is not present yet.
+
+> **Manual install:** Copy the APK to the phone, then open it and allow
+> "Install from unknown sources" when prompted.
+
+### 7. Run on Device
 - Install **Expo Go** from App Store/Play Store
 - Scan QR code from terminal
 - App loads and connects to backend
