@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Request
 from sqlalchemy.orm import Session
 from typing import List
 import os
@@ -19,37 +19,74 @@ from ..services.plant_identification import (
 router = APIRouter(prefix="/api/v1/reports", tags=["Reports & Geospatial Mapping"])
 logger = logging.getLogger(__name__)
 
+
+def _sanitize_filename(filename: str) -> str:
+    """Return a filesystem-safe basename for a temp file."""
+    name = os.path.basename((filename or "").replace("\\", "/"))
+    return name or "image.jpg"
+
+
+async def _extract_image(request: Request):
+    """
+    Extract uploaded image bytes from either:
+      - multipart/form-data with a 'file' field, or
+      - JSON body { "image": "<base64>", "filename": "x.jpg" }
+    Returns (image_bytes, filename, content_type).
+    """
+    import base64
+    content_type = (request.headers.get("content-type") or "").lower()
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        upload = form.get("file")
+        if not upload:
+            raise HTTPException(status_code=400, detail="'file' field is required")
+        data = await upload.read()
+        return data, _sanitize_filename(upload.filename), upload.content_type or "image/jpeg"
+    else:
+        try:
+            payload = await request.json()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Expected JSON body with 'image' field")
+        image_b64 = payload.get("image")
+        if not image_b64:
+            raise HTTPException(status_code=400, detail="'image' (base64) field is required")
+        data = base64.b64decode(image_b64)
+        return data, _sanitize_filename(payload.get("filename")), "image/jpeg"
+
+
 @router.post("/diagnose")
-def diagnose_crop_image(file: UploadFile = File(...)):
+async def diagnose_crop_image(request: Request):
     """
-    Accepts an uploaded crop image, runs MobileNetV3 classification,
-    and returns crop type, disease label, confidence score, and severity.
-    This endpoint is public.
+    Accepts an uploaded crop image (multipart 'file' or JSON {image: base64}),
+    runs MobileNetV3 classification, and returns crop type, disease label,
+    confidence score, and severity. This endpoint is public.
     """
+    image_bytes, filename, content_type = await _extract_image(request)
+
     # Verify file is an image
-    if not file.content_type.startswith("image/"):
+    if not content_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File uploaded is not a valid image."
         )
-        
+
     # Create a local temp directory within the workspace backend folder
     current_dir = os.path.dirname(os.path.abspath(__file__))
     temp_dir = os.path.join(os.path.dirname(current_dir), "temp_uploads")
     os.makedirs(temp_dir, exist_ok=True)
-    
+
     # Generate unique temp filename
-    temp_file_path = os.path.join(temp_dir, f"temp_{uuid.uuid4().hex}_{file.filename}")
-    
+    temp_file_path = os.path.join(temp_dir, f"temp_{uuid.uuid4().hex}_{filename}")
+
     try:
         # Save file locally
         with open(temp_file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
+            buffer.write(image_bytes)
+
         # Run inference
         service = get_inference_service()
         prediction = service.predict_crop(temp_file_path)
-        
+
         return prediction
     except Exception as e:
         print(f"Error running inference: {e}")
@@ -62,9 +99,8 @@ def diagnose_crop_image(file: UploadFile = File(...)):
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 
-
 @router.post("/analyze-plant")
-def analyze_plant_image(file: UploadFile = File(...)):
+async def analyze_plant_image(request: Request):
     """
     Green-Sense Multi-Service Plant Analysis Pipeline
     1. Image Validation - Checks if image contains a plant
@@ -74,8 +110,10 @@ def analyze_plant_image(file: UploadFile = File(...)):
     
     This endpoint is public and uses the Green-Sense architecture.
     """
+    image_bytes, filename, content_type = await _extract_image(request)
+
     # Verify file is an image
-    if not file.content_type.startswith("image/"):
+    if not content_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File uploaded is not a valid image."
@@ -87,12 +125,12 @@ def analyze_plant_image(file: UploadFile = File(...)):
     os.makedirs(temp_dir, exist_ok=True)
     
     # Generate unique temp filename
-    temp_file_path = os.path.join(temp_dir, f"temp_{uuid.uuid4().hex}_{file.filename}")
+    temp_file_path = os.path.join(temp_dir, f"temp_{uuid.uuid4().hex}_{filename}")
     
     try:
         # Save file locally
         with open(temp_file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(image_bytes)
         
         analysis_result = {
             "timestamp": datetime.now().isoformat(),
