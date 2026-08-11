@@ -9,11 +9,18 @@ def _service():
 def test_parse_disease_response_to_common_shape():
     payload = {
         "result": {
-            "is_healthy": {"probability": 0.05, "binary": False},
-            "is_plant": {"probability": 0.99, "binary": True},
-            "disease": {"name": "late blight", "probability": 0.87, "binary": True},
-            "disease_details": {"scientific_name": "Phytophthora infestans"},
-            "crop": {"name": "tomato", "probability": 0.94, "binary": True},
+            "is_plant": {"probability": 0.99, "binary": True, "threshold": 0.5},
+            "crop": {"suggestions": [
+                {"name": "tomato", "scientific_name": "Solanum lycopersicum", "probability": 0.94},
+            ]},
+            "disease": {"suggestions": [
+                {
+                    "name": "late blight",
+                    "scientific_name": "Phytophthora infestans",
+                    "probability": 0.87,
+                    "details": {"treatment": {"chemical": ["copper fungicide"]}, "symptoms": {"A": "dark lesions"}},
+                },
+            ]},
         },
     }
     out = _service()._parse(payload)
@@ -25,13 +32,19 @@ def test_parse_disease_response_to_common_shape():
     assert out["severity"] == "High"
     assert out["model_used"] == "crop_health"
     assert out["is_healthy"] is False
+    assert out["treatment"] == {"chemical": ["copper fungicide"]}
 
 
 def test_parse_healthy_response():
     payload = {
         "result": {
-            "is_healthy": {"probability": 0.97, "binary": True},
-            "crop": {"name": "cassava", "probability": 0.9, "binary": True},
+            "is_plant": {"probability": 0.99, "binary": True},
+            "crop": {"suggestions": [
+                {"name": "cassava", "scientific_name": "Manihot esculenta", "probability": 0.9},
+            ]},
+            "disease": {"suggestions": [
+                {"name": "healthy", "scientific_name": "healthy", "probability": 0.95},
+            ]},
         },
     }
     out = _service()._parse(payload)
@@ -41,15 +54,17 @@ def test_parse_healthy_response():
     assert out["is_healthy"] is True
 
 
-def test_uses_suggestions_when_primary_disease_missing():
+def test_uses_top_disease_suggestion():
     payload = {
         "result": {
-            "is_healthy": {"probability": 0.1, "binary": False},
-            "crop": {"name": "maize", "probability": 0.9, "binary": True},
+            "is_plant": {"probability": 0.95, "binary": True},
+            "crop": {"suggestions": [
+                {"name": "maize", "scientific_name": "Zea mays", "probability": 0.9},
+            ]},
+            "disease": {"suggestions": [
+                {"name": "leaf rust", "scientific_name": "Puccinia sorghi", "probability": 0.82, "details": {}},
+            ]},
         },
-        "suggestions": [
-            {"name": "leaf rust", "probability": 0.82},
-        ],
     }
     out = _service()._parse(payload)
     assert out["disease_label"] == "Maize_Leaf_Rust"

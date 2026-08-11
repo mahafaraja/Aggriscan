@@ -91,12 +91,12 @@ class CropHealthService:
     def __init__(self, api_key: Optional[str] = None, api_url: Optional[str] = None):
         self.api_key = api_key or settings.CROP_HEALTH_API_KEY
         self.api_url = (api_url or settings.CROP_HEALTH_API_URL).rstrip("/")
-        self.detection_url = f"{self.api_url}/health/detection"
+        self.identification_url = f"{self.api_url}/identification"
         self.enabled = bool(self.api_key) and self.api_key != "your_crop_health_api_key_here"
         logger.info(
             "CropHealthService initialized enabled=%s url=%s",
             self.enabled,
-            self.detection_url,
+            self.identification_url,
         )
 
     # -- normalization helpers --------------------------------------------
@@ -161,15 +161,23 @@ class CropHealthService:
             img.save(buffer, format="JPEG", quality=95)
             buffer.seek(0)
 
-            files = {"images": ("image.jpg", buffer, "image/jpeg")}
-            data = {"similar_images": "false", "language": "en"}
-            headers = {"X-Api-Key": self.api_key}
+            files = {"image1": ("image.jpg", buffer, "image/jpeg")}
+            # The `details` query param asks the API to enrich results with
+            # treatment / prevention / symptoms guidance (used for farmer advice).
+            params = {
+                "language": "en",
+                "details": (
+                    "type,common_names,description,severity,symptoms,treatment,"
+                    "prevention,url,wiki_url,taxonomy"
+                ),
+            }
+            headers = {"Api-Key": self.api_key}
 
-            logger.info("Calling Crop.health detection endpoint")
+            logger.info("Calling Crop.health identification endpoint")
             response = requests.post(
-                self.detection_url,
+                self.identification_url,
                 files=files,
-                data=data,
+                params=params,
                 headers=headers,
                 timeout=30,
             )
@@ -208,40 +216,50 @@ class CropHealthService:
     # -- response parsing ------------------------------------------------
     def _parse(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         result = payload.get("result") or {}
-        is_healthy = bool((result.get("is_healthy") or {}).get("binary", False))
-        healthy_prob = float((result.get("is_healthy") or {}).get("probability", 0.0))
 
-        disease = result.get("disease") or {}
+        # Current Crop.health schema returns suggestions arrays:
+        #   result.crop.suggestions[0]  -> {name, scientific_name, probability, details}
+        #   result.disease.suggestions[0] -> {name, scientific_name, probability, details}
+        crop_suggestions = ((result.get("crop") or {}).get("suggestions")) or []
+        disease_suggestions = ((result.get("disease") or {}).get("suggestions")) or []
+
+        crop = crop_suggestions[0] if crop_suggestions else {}
+        disease = disease_suggestions[0] if disease_suggestions else {}
+
+        crop_name_raw = crop.get("name") or crop.get("scientific_name") or "Unknown"
+        crop_scientific = crop.get("scientific_name")
+        crop_prob = float(crop.get("probability", 0.0))
+
         disease_name = disease.get("name")
+        scientific_name = disease.get("scientific_name")
         disease_prob = float(disease.get("probability", 0.0))
+        details = disease.get("details") or {}
 
-        # Some responses only populate `suggestions` — use top suggestion when
-        # the primary disease block is weak/unset.
-        if (not disease_name or disease_prob < 0.01) and payload.get("suggestions"):
-            top = payload["suggestions"][0]
-            disease_name = top.get("name") or disease_name
-            disease_prob = float(top.get("probability", disease_prob))
+        # Some responses include an explicit is_healthy block (beta variant).
+        is_healthy_obj = result.get("is_healthy") or {}
+        is_healthy = bool(is_healthy_obj.get("binary", False))
+        healthy_prob = float(is_healthy_obj.get("probability", 0.0))
+        healthy_named = str(disease_name or "").lower() in ("healthy", "no disease", "none")
 
-        details = result.get("disease_details") or {}
-        scientific_name = details.get("scientific_name")
-        crop = result.get("crop") or {}
-        crop_name = self._normalize_crop(crop.get("name"))
-
-        if is_healthy or not disease_name:
+        if is_healthy or not disease_name or healthy_named:
+            confidence = healthy_prob or crop_prob or 1.0
             return {
                 "success": True,
-                "status": "healthy" if is_healthy else "no_disease",
-                "crop_type": crop_name,
-                "disease_label": f"{crop_name}_Healthy",
-                "confidence_score": healthy_prob or disease_prob,
+                "status": "healthy" if (is_healthy or healthy_named) else "no_disease",
+                "crop_type": self._normalize_crop(crop_name_raw),
+                "crop_probability": crop_prob,
+                "crop_scientific_name": crop_scientific,
+                "disease_label": f"{self._normalize_crop(crop_name_raw)}_Healthy",
+                "confidence_score": confidence,
                 "severity": "Low",
-                "detected_raw_crop": crop.get("name", "Unknown"),
+                "detected_raw_crop": crop_name_raw,
                 "model_used": "crop_health",
-                "is_healthy": is_healthy,
+                "is_healthy": True,
                 "source": "crop_health",
                 "raw": payload,
             }
 
+        crop_name = self._normalize_crop(crop_name_raw)
         disease_suffix = self._disease_suffix(disease_name, scientific_name) or "Disease"
         disease_label = f"{crop_name}_{disease_suffix}"
 
@@ -249,15 +267,20 @@ class CropHealthService:
             "success": True,
             "status": "success",
             "crop_type": crop_name,
+            "crop_probability": crop_prob,
+            "crop_scientific_name": crop_scientific,
             "disease_label": disease_label,
             "confidence_score": disease_prob,
-            "severity": self._severity(is_healthy, disease_prob),
-            "detected_raw_crop": crop.get("name", "Unknown"),
+            "severity": self._severity(False, disease_prob),
+            "detected_raw_crop": crop_name_raw,
             "model_used": "crop_health",
             "is_healthy": False,
             "disease_name": disease_name,
             "scientific_name": scientific_name,
             "treatment": details.get("treatment"),
+            "symptoms": details.get("symptoms"),
+            "severity_description": details.get("severity"),
+            "description": details.get("description"),
             "source": "crop_health",
             "raw": payload,
         }
