@@ -77,9 +77,21 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
 
     try {
       // 1. Capture snap-frame using the correct layout configuration
-      const photo = await cameraRef.current.takePictureAsync();
-      if (!photo || !photo.uri) throw new Error("Failed to capture image data URI");
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8, base64: true });
+      console.log('[Camera] takePicture result keys:', Object.keys(photo || {}));
+      if (!photo || !photo.uri) throw new Error("Camera did not return an image URI after capture.");
       setCapturedImage(photo.uri);
+
+      const hasBase64 = typeof photo.base64 === 'string' && photo.base64.length > 0;
+      console.log('[Camera] uri:', photo.uri, 'hasBase64:', hasBase64, 'base64Length:', photo.base64?.length);
+
+      if (!hasBase64) {
+        throw new Error(
+          "Camera capture did not return base64 data. " +
+          "This build may not support base64 capture. " +
+          "uri=" + photo.uri
+        );
+      }
 
       // 2. Fetch coordinate points
       let lat = 0.3476; // Kampala baseline fallback coordinates
@@ -95,16 +107,20 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
         }
       }
 
+      console.log('[Camera] Starting processScanImage...');
       const scan = await processScanImage({
         imageUri: photo.uri,
+        imageBase64: photo.base64,
         latitude: lat,
         longitude: lon,
       });
+      console.log('[Camera] processScanImage success, crop:', scan.cropType);
       onScanComplete(scan);
 
     } catch (error) {
-      console.error("Diagnosis workflow failed:", error);
-      alert("Error processing crop diagnosis.");
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Diagnosis workflow failed:", message, error);
+      alert("Scan failed: " + message);
     } finally {
       setIsProcessing(false);
     }
@@ -158,7 +174,7 @@ export default function CameraScreen({ onNavigate, onScanComplete }: CameraScree
             {isProcessing && (
               <View style={styles.processingOverlay}>
                 <ActivityIndicator size="large" color={theme.colors.textOnDark} />
-                <Text style={styles.processingText}>Processing local model inference...</Text>
+                <Text style={styles.processingText}>Analyzing plant...</Text>
               </View>
             )}
           </View>

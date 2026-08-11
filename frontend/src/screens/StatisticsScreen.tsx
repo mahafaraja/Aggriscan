@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
 import { getLocalHistory } from '../services/db';
 import { syncOfflineReports } from '../services/sync';
+import { getUserStatistics, UserStatisticsResponse } from '../services/backendApi';
 import { theme } from '../theme/Index';
 
 interface StatisticsScreenProps {
@@ -13,28 +14,29 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
   const [totalScans, setTotalScans] = useState<number>(0);
   const [pendingSync, setPendingSync] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [isLoadingStats, setIsLoadingStats] = useState<boolean>(false);
   const [diseasesDetected, setDiseasesDetected] = useState<number>(0);
   const [diseasesList, setDiseasesList] = useState<{ name: string; count: number }[]>([]);
   const [healthyCount, setHealthyCount] = useState<number>(0);
+  const [diseasedCount, setDiseasedCount] = useState<number>(0);
   const [avgConfidence, setAvgConfidence] = useState<number>(0);
   const [avgProcessingTime, setAvgProcessingTime] = useState<number>(0);
+  const [statsSource, setStatsSource] = useState<string>('local');
 
-  const loadDashboardStats = async () => {
+  const loadLocalStats = async () => {
     try {
       const history = await getLocalHistory();
-      setTotalScans(history.length);
-      
       const pendingCount = history.filter(r => r.sync_status === 'PENDING').length;
       setPendingSync(pendingCount);
+      setTotalScans(history.length);
 
-      // Real statistics derived from the stored scans
       const nonHealthy = history.filter(
         (r) => !(r.disease_label || '').toLowerCase().includes('healthy')
       );
       const healthy = history.length - nonHealthy.length;
       setHealthyCount(healthy);
+      setDiseasedCount(nonHealthy.length);
 
-      // Distinct diseases actually detected
       const diseaseMap = new Map<string, number>();
       nonHealthy.forEach((r) => {
         const key = (r.disease_label || 'Unknown').trim();
@@ -47,7 +49,6 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
           .sort((a, b) => b.count - a.count)
       );
 
-      // Average confidence across scans
       if (history.length > 0) {
         const confSum = history.reduce((sum, r) => sum + (r.confidence_score || 0), 0);
         setAvgConfidence(confSum / history.length);
@@ -55,7 +56,6 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
         setAvgConfidence(0);
       }
 
-      // Average processing time (ms) across scans
       const timed = history.filter((r) => r.processing_time_ms && r.processing_time_ms > 0);
       if (timed.length > 0) {
         const timeSum = timed.reduce((sum, r) => sum + (r.processing_time_ms || 0), 0);
@@ -64,13 +64,35 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
         setAvgProcessingTime(0);
       }
     } catch (error) {
-      console.error("Dashboard: Error fetching logs", error);
+      console.error("Dashboard: Error fetching local logs", error);
+    }
+  };
+
+  const loadBackendStats = async () => {
+    setIsLoadingStats(true);
+    try {
+      const data: UserStatisticsResponse = await getUserStatistics();
+      setStatsSource('backend');
+      setTotalScans(data.total_scans);
+      setHealthyCount(data.healthy_count);
+      setDiseasedCount(data.diseased_count);
+      setDiseasesDetected(data.diseases_detected);
+      setDiseasesList(data.diseases_list || []);
+      setAvgConfidence(data.avg_confidence);
+      setPendingSync(0);
+      setAvgProcessingTime(0);
+    } catch (error) {
+      console.error("Dashboard: Backend stats failed, falling back to local", error);
+      setStatsSource('local');
+      await loadLocalStats();
+    } finally {
+      setIsLoadingStats(false);
     }
   };
 
   useEffect(() => {
-    loadDashboardStats();
-    const interval = setInterval(loadDashboardStats, 3000);
+    loadBackendStats();
+    const interval = setInterval(loadBackendStats, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -80,7 +102,7 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
     try {
       const result = await syncOfflineReports();
       alert(result.synced > 0 ? `Successfully uploaded ${result.synced} records!` : "No pending records uploaded.");
-      await loadDashboardStats();
+      await loadBackendStats();
     } catch (e) {
       alert("Synchronization failed. Check server connectivity.");
     } finally {
@@ -103,10 +125,13 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
         {/* Sync Status Banner */}
         <View style={[styles.syncBanner, pendingSync > 0 ? styles.syncWarning : styles.syncSuccess]}>
           <Text style={styles.syncText}>
-            {pendingSync > 0 
-              ? `${pendingSync} Diagnostics Cached Offline (Pending Sync)` 
-              : 'All Data Synchronized to PostGIS'
-            }
+            {isLoadingStats
+              ? 'Loading statistics...'
+              : pendingSync > 0
+                ? `${pendingSync} Diagnostics Cached Offline (Pending Sync)`
+                : statsSource === 'backend'
+                  ? 'Live statistics from server'
+                  : 'Showing local statistics'}
           </Text>
           {pendingSync > 0 && (
             <TouchableOpacity 

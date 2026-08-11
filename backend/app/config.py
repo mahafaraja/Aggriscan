@@ -40,6 +40,20 @@ class Settings:
     PLANTID_API_KEY: str = _env_str("PLANTID_API_KEY")
     PLANTNET_API_KEY: str = _env_str("PLANTNET_API_KEY")
 
+    # Crop.health (Kindwise) — disease/health identification provider
+    CROP_HEALTH_API_KEY: str = _env_str("CROP_HEALTH_API_KEY")
+    CROP_HEALTH_API_URL: str = _env_str(
+        "CROP_HEALTH_API_URL", "https://crop.kindwise.com/api/v1"
+    ).rstrip("/")
+
+    # Confidence thresholds (configurable — calibrate with AgriScan validation data)
+    PLANTNET_MIN_CONFIDENCE: float = float(_env_str("PLANTNET_MIN_CONFIDENCE", "0.45"))
+    CROP_HEALTH_MIN_CONFIDENCE: float = float(_env_str("CROP_HEALTH_MIN_CONFIDENCE", "0.60"))
+    LOCAL_MODEL_MIN_CONFIDENCE: float = float(_env_str("LOCAL_MODEL_MIN_CONFIDENCE", "0.45"))
+
+    def crop_health_provider_ready(self) -> bool:
+        return bool(self.CROP_HEALTH_API_KEY) and self.CROP_HEALTH_API_KEY != "your_crop_health_api_key_here"
+
     def sms_provider_ready(self) -> bool:
         if self.SMS_PROVIDER == "yoola":
             return bool(self.YOLLA_SMS_API_KEY)

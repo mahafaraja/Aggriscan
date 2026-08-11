@@ -92,6 +92,9 @@ def health_config_check():
             "gemini_api_key_configured": bool(settings.GEMINI_API_KEY),
             "plantid_api_key_configured": bool(settings.PLANTID_API_KEY),
             "plantnet_api_key_configured": bool(settings.PLANTNET_API_KEY),
+            "crop_health_api_key_configured": bool(settings.CROP_HEALTH_API_KEY),
+            "crop_health_provider_ready": settings.crop_health_provider_ready(),
+            "crop_health_api_url": settings.CROP_HEALTH_API_URL,
         },
         "models": {
             "model_dir": model_dir,

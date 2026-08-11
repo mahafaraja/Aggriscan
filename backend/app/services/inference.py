@@ -146,6 +146,14 @@ class CropInferenceService:
 
         return self.fallback_disease_class_maps.get(crop_type)
     
+
+    def _generic_disease_label(self, crop_type: str) -> str:
+        normalized = self._normalize_crop_type(crop_type)
+        fallback = self.fallback_disease_class_maps.get(normalized)
+        if fallback and fallback.get('0'):
+            return fallback['0']
+        return f'{normalized.capitalize()}_Unclassified'
+
     def _preprocess_image(self, image_path: str, input_shape):
         """Load and preprocess image for inference"""
         img = Image.open(image_path).convert('RGB')
@@ -269,37 +277,34 @@ class CropInferenceService:
         """
         Loads an image, preprocesses it, runs inference, and returns predicted crop type,
         confidence score, mapped disease labels, and severity.
-        
-        Enhanced fallback chain:
-        1. Try PlantNet API (primary - replaces gatekeeper for plant identification)
-        2. Try gatekeeper model (MobileNetV2) for crop type
-        3. Try disease expert model for specific crop
-        4. Fallback to agriscan_model
+
+        Fast local-first inference chain:
+        1. Try gatekeeper model (MobileNetV2) for crop type - FAST, offline
+        2. Try disease expert model for specific crop - FAST, offline
+        3. Try agriscan_model fallback - FAST, offline
+        4. Try PlantNet API as optional enhancer - SLOW, online
         """
-        # Strategy 1: Use PlantNet API (primary - replaces gatekeeper)
-        plantnet_result = self._predict_with_plantnet(image_path)
-        if plantnet_result:
-            logger.info("Plant identification succeeded using PlantNet (primary)")
-            return plantnet_result
-        
-        # Strategy 2: Use gatekeeper model + disease expert model
+        # Strategy 1: Use gatekeeper model + disease expert model first for speed
         if self.gatekeeper_interpreter and self.gatekeeper_class_map:
             try:
                 img_array = self._preprocess_image(image_path, self.gatekeeper_interpreter.get_input_details()[0]['shape'])
                 pred_idx, confidence = self._run_inference(self.gatekeeper_interpreter, img_array)
                 crop_name = self.gatekeeper_class_map[str(pred_idx)]
                 
+                logger.info("Gatekeeper raw class=%s confidence=%s", crop_name, confidence)
+                
                 # Extract crop type (e.g., "Tomato___Early_Blight" -> "Tomato")
                 crop_type = crop_name.split("_")[0] if "_" in crop_name else crop_name
                 crop_type = self._normalize_crop_type(crop_type)
+                logger.info("Gatekeeper normalized crop_type=%s", crop_type)
                 
                 # Try to use disease expert model for this crop
                 disease_result = self._predict_with_disease_expert(image_path, crop_type.lower())
                 if disease_result:
                     return disease_result
                 
-                # If no disease expert, use gatekeeper result
-                disease_label = crop_name
+                # If no disease expert, build a generic disease label instead of returning bare crop name
+                disease_label = self._generic_disease_label(crop_type)
                 severity = "High" if confidence > 0.8 else "Medium" if confidence > 0.5 else "Low"
                 
                 return {
@@ -319,6 +324,7 @@ class CropInferenceService:
                 img_array = self._preprocess_image(image_path, self.agriscan_interpreter.get_input_details()[0]['shape'])
                 pred_idx, confidence = self._run_inference(self.agriscan_interpreter, img_array)
                 crop_name = self.agriscan_class_map[str(pred_idx)]
+                logger.info("Agriscan fallback raw class=%s confidence=%s", crop_name, confidence)
                 
                 # Use heuristic green ratio analysis
                 r_mean = np.mean(img_array[0, :, :, 0])
@@ -358,6 +364,19 @@ class CropInferenceService:
             except Exception as e:
                 logger.warning("Agriscan fallback model failed: %s", str(e))
         
+        # Strategy 3: Try PlantNet API as optional enhancer
+        plantnet_result = self._predict_with_plantnet(image_path)
+        if plantnet_result:
+            supported = bool(self._class_map_for_crop(self._normalize_crop_type(plantnet_result.get("crop_type") or "")))
+            logger.info(
+                "PlantNet result crop_type=%s raw=%s confidence=%s supported_by_local_model=%s",
+                plantnet_result.get("crop_type"), plantnet_result.get("detected_raw_crop"), plantnet_result.get("confidence_score"), supported,
+            )
+            if supported and (plantnet_result.get("confidence_score") or 0) >= 0.45:
+                logger.info("Plant identification accepted from PlantNet (enhancer)")
+                return plantnet_result
+            logger.info("PlantNet result rejected: unsupported crop or low confidence; keeping local result")
+        
         # Ultimate fallback - return a safe default response
         logger.error("All models failed - returning fallback response")
         return {
@@ -368,7 +387,7 @@ class CropInferenceService:
             "detected_raw_crop": "Unknown",
             "model_used": "fallback_error"
         }
-    
+
     def _predict_with_disease_expert(self, image_path: str, crop_type: str):
         """
         Use crop-specific disease expert model if available

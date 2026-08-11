@@ -83,9 +83,52 @@ async def diagnose_crop_image(request: Request):
         with open(temp_file_path, "wb") as buffer:
             buffer.write(image_bytes)
 
-        # Run inference
-        service = get_inference_service()
-        prediction = service.predict_crop(temp_file_path)
+        # Run diagnosis: Crop.health (Kindwise) first, local model as fallback.
+        from ..config import settings as app_settings
+        from ..services.crop_health_service import get_crop_health_service
+
+        prediction = None
+        crop_health_result = None
+
+        if app_settings.crop_health_provider_ready():
+            ch_service = get_crop_health_service()
+            crop_health_result = ch_service.identify_disease(temp_file_path)
+            if (
+                crop_health_result.get("success")
+                and (crop_health_result.get("confidence_score") or 0)
+                >= app_settings.CROP_HEALTH_MIN_CONFIDENCE
+            ):
+                logger.info(
+                    "Diagnosis accepted from Crop.health (status=%s conf=%s)",
+                    crop_health_result.get("status"),
+                    crop_health_result.get("confidence_score"),
+                )
+                prediction = crop_health_result
+                prediction["fallback_used"] = False
+            else:
+                logger.info(
+                    "Crop.health diagnosis rejected (status=%s conf=%s); using local model",
+                    crop_health_result.get("status"),
+                    crop_health_result.get("confidence_score"),
+                )
+        else:
+            logger.info("Crop.health not configured; using local model diagnosis")
+
+        if prediction is None:
+            # Fallback to local TFLite inference
+            service = get_inference_service()
+            local_pred = service.predict_crop(temp_file_path)
+            local_conf = local_pred.get("confidence_score") or 0.0
+            local_pred["status"] = (
+                "success" if local_conf >= app_settings.LOCAL_MODEL_MIN_CONFIDENCE
+                else "low_confidence"
+            )
+            local_pred["fallback_used"] = True
+            if crop_health_result is not None:
+                # helpful for debugging when the provider was tried
+                local_pred["crop_health_success"] = crop_health_result.get("success", False)
+                local_pred["crop_health_status"] = crop_health_result.get("status")
+            prediction = local_pred
 
         return prediction
     except Exception as e:
@@ -256,6 +299,44 @@ def get_outbreak_hotspots(
     return crud.detect_outbreak_hotspots(
         db=db, radius_meters=radius_meters, threshold_count=threshold_count
     )
+
+
+@router.get("/statistics")
+def get_user_statistics(
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns real scan statistics for the authenticated user from the server database.
+    """
+    reports = db.query(models.Report).filter(models.Report.user_id == current_user.id).all()
+
+    total_scans = len(reports)
+    healthy_reports = [r for r in reports if (r.disease_label or "").lower().startswith("healthy")]
+    healthy_count = len(healthy_reports)
+    diseased_reports = [r for r in reports if r not in healthy_reports]
+
+    disease_map: dict[str, int] = {}
+    for r in diseased_reports:
+        key = (r.disease_label or "Unknown").strip()
+        disease_map[key] = disease_map.get(key, 0) + 1
+
+    diseases_list = [
+        {"name": name, "count": count}
+        for name, count in sorted(disease_map.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+    confidence_values = [float(r.confidence_score) for r in reports if r.confidence_score is not None]
+    avg_confidence = sum(confidence_values) / len(confidence_values) if confidence_values else 0.0
+
+    return {
+        "total_scans": total_scans,
+        "healthy_count": healthy_count,
+        "diseased_count": len(diseased_reports),
+        "diseases_detected": len(disease_map),
+        "diseases_list": diseases_list,
+        "avg_confidence": avg_confidence,
+    }
 
 
 @router.post("/export-pdf")

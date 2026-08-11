@@ -23,6 +23,7 @@ interface AddPhotoScreenProps {
 
 export default function AddPhotoScreen({ onBack, onScanComplete }: AddPhotoScreenProps) {
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const pickImage = async () => {
@@ -38,10 +39,21 @@ export default function AddPhotoScreen({ onBack, onScanComplete }: AddPhotoScree
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.85,
+      base64: true,
     });
 
     if (!result.canceled && result.assets && result.assets[0]?.uri) {
-      setImageUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setImageUri(asset.uri);
+      const b64 = asset.base64 || null;
+      console.log('[AddPhoto] picked image', {
+        uri: asset.uri,
+        hasBase64: !!b64,
+        base64Length: b64?.length,
+      });
+      setImageBase64(b64);
+    } else {
+      console.log('[AddPhoto] user cancelled image picker or no asset returned');
     }
   };
 
@@ -66,11 +78,19 @@ export default function AddPhotoScreen({ onBack, onScanComplete }: AddPhotoScree
         }
       }
 
-      const scan = await processScanImage({ imageUri, latitude, longitude });
+      console.log('[AddPhoto] starting processScanImage', {
+        imageUri,
+        hasBase64: !!imageBase64,
+        base64Length: imageBase64?.length,
+      });
+
+      const scan = await processScanImage({ imageUri, imageBase64: imageBase64 || undefined, latitude, longitude });
+      console.log('[AddPhoto] processScanImage success, crop:', scan.cropType);
       onScanComplete(scan);
     } catch (error) {
-      console.error('Add photo diagnosis failed:', error);
-      alert('Could not process this photo. Please try another clear leaf image.');
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('Add photo diagnosis failed:', message, error);
+      alert('Scan failed: ' + message);
     } finally {
       setIsProcessing(false);
     }

@@ -4,6 +4,7 @@ import { CropType, ScanPayload } from '../types/scan';
 
 type ProcessScanInput = {
   imageUri: string;
+  imageBase64?: string;
   latitude: number;
   longitude: number;
 };
@@ -18,18 +19,36 @@ function normalizeCropType(value?: string): CropType {
   if (normalized.includes('groundnut') || normalized.includes('peanut')) return 'Groundnuts';
   if (normalized.includes('potato')) return 'Potato';
   if (normalized.includes('tomato')) return 'Tomato';
-  return 'Banana';
+  if (normalized.includes('banana')) return 'Banana';
+  return 'Unknown';
 }
 
 export async function processScanImage({
   imageUri,
+  imageBase64,
   latitude,
   longitude,
 }: ProcessScanInput): Promise<ScanPayload> {
+  console.log('[scanProcessor] start', {
+    hasUri: !!imageUri,
+    hasBase64: !!imageBase64,
+    base64Length: imageBase64?.length,
+    latitude,
+    longitude,
+  });
+
   try {
     const scanStartTime = Date.now();
     // Try the new Green-Sense plant analysis endpoint first
-    const analysisResponse = await analyzePlantWithBackend(imageUri);
+    console.log('[scanProcessor] calling analyzePlantWithBackend...');
+    const analysisResponse = await analyzePlantWithBackend(imageUri, imageBase64);
+    console.log('[scanProcessor] analyzePlantWithBackend done', {
+      plant_identified: analysisResponse.plant_identified,
+      service_used: analysisResponse.summary?.service_used,
+      confidence: analysisResponse.summary?.confidence,
+      plant_name: analysisResponse.summary?.plant_name,
+      scientific_name: analysisResponse.summary?.scientific_name,
+    });
     
     if (analysisResponse.plant_identified) {
       // Successfully analyzed with Green-Sense
@@ -43,29 +62,47 @@ export async function processScanImage({
       const scannedAt = new Date().toISOString();
 
       // Create diagnostic object compatible with existing structure
+      const careGuide = analysisResponse.care_recommendations?.care_guide;
+      let diseaseLabel = plantData.plant_name;
+      let severity: 'Low' | 'Medium' | 'High' = 'Low';
+
+      if (careGuide) {
+        const diseaseInfo = (careGuide as any).disease_info;
+        if (diseaseInfo?.name) {
+          diseaseLabel = diseaseInfo.name;
+          severity = (diseaseInfo.severity as 'Low' | 'Medium' | 'High') || 'Low';
+        } else if (careGuide.common_diseases?.[0]?.name) {
+          diseaseLabel = careGuide.common_diseases[0].name;
+          severity = 'Medium';
+        }
+      }
+
       const diagnostic = {
         crop_type: cropType,
-        disease_label: plantData.plant_name,
+        disease_label: diseaseLabel,
         confidence_score: summary.confidence,
-        severity: 'Low' as const,
+        severity,
         detected_raw_crop: plantData.plant_name,
         model_used: summary.service_used,
-        // Additional Green-Sense data
-        plant_analysis: analysisResponse
+        plant_analysis: analysisResponse,
       };
 
-      await saveOfflineReport({
-        id: reportId,
-        crop_type: cropType,
-        disease_label: plantData.plant_name,
-        confidence_score: summary.confidence,
-        latitude,
-        longitude,
-        severity: 'Low',
-        offline_created_at: scannedAt,
-        image_url: imageUri,
-        processing_time_ms: Date.now() - scanStartTime,
-      });
+      try {
+        await saveOfflineReport({
+          id: reportId,
+          crop_type: cropType,
+          disease_label: diseaseLabel,
+          confidence_score: summary.confidence,
+          latitude,
+          longitude,
+          severity,
+          offline_created_at: scannedAt,
+          image_url: imageUri,
+          processing_time_ms: Date.now() - scanStartTime,
+        });
+      } catch (dbErr) {
+        console.error('Scan saved but offline DB write failed:', dbErr);
+      }
 
       return {
         id: reportId,
@@ -77,9 +114,9 @@ export async function processScanImage({
         scannedAt,
       };
     } else {
-      // Fallback to old diagnosis endpoint if Green-Sense fails
-      console.log('Green-Sense analysis failed, falling back to TFLite diagnosis');
-      const backendPrediction = await diagnoseImageWithBackend(imageUri);
+      // Fallback to local backend diagnosis endpoint if Green-Sense fails
+      console.log('[scanProcessor] Green-Sense failed, falling back to diagnoseImageWithBackend');
+      const backendPrediction = await diagnoseImageWithBackend(imageUri, imageBase64);
       const cropType = normalizeCropType(backendPrediction.crop_type || backendPrediction.detected_raw_crop);
       
       const reportId = Math.random().toString(36).substring(2, 15);
@@ -91,21 +128,25 @@ export async function processScanImage({
         confidence_score: backendPrediction.confidence_score,
         severity: backendPrediction.severity as 'Low' | 'Medium' | 'High',
         detected_raw_crop: backendPrediction.detected_raw_crop,
-        model_used: 'tflite-fallback'
+        model_used: backendPrediction.model_used || 'local-backend',
       };
 
-      await saveOfflineReport({
-        id: reportId,
-        crop_type: cropType,
-        disease_label: backendPrediction.disease_label,
-        confidence_score: backendPrediction.confidence_score,
-        latitude,
-        longitude,
-        severity: backendPrediction.severity,
-        offline_created_at: scannedAt,
-        image_url: imageUri,
-        processing_time_ms: Date.now() - scanStartTime,
-      });
+      try {
+        await saveOfflineReport({
+          id: reportId,
+          crop_type: cropType,
+          disease_label: backendPrediction.disease_label,
+          confidence_score: backendPrediction.confidence_score,
+          latitude,
+          longitude,
+          severity: backendPrediction.severity,
+          offline_created_at: scannedAt,
+          image_url: imageUri,
+          processing_time_ms: Date.now() - scanStartTime,
+        });
+      } catch (dbErr) {
+        console.error('Scan saved but offline DB write failed:', dbErr);
+      }
 
       return {
         id: reportId,
@@ -118,7 +159,8 @@ export async function processScanImage({
       };
     }
   } catch (error) {
-    console.error('All backend analysis methods failed:', error);
-    throw new Error('Could not process this photo. Please try another clear leaf image.');
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[scanProcessor] All backend analysis methods failed:', message, error);
+    throw new Error('Scan failed: ' + message);
   }
 }
