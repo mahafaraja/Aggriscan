@@ -21,13 +21,28 @@ from ..config import settings
 
 logger = logging.getLogger(__name__)
 
+GOOGLE_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+
+
+def _gemini_generate_url(api_key):
+    """Build the Gemini generateContent URL using the configured model.
+
+    `gemini-2.0-flash` has been retired from the project's model registry and
+    returns HTTP 404, so the model is configurable via GEMINI_MODEL
+    (default `gemini-2.5-flash`).
+    """
+    if not api_key:
+        return None
+    model = (settings.GEMINI_MODEL or "").strip() or "gemini-2.5-flash"
+    return f"{GOOGLE_API_BASE}/models/{model}:generateContent?key={api_key}"
+
 
 class ImageValidationService:
     """Validates if an image contains a plant"""
     
     def __init__(self, gemini_api_key: str):
         self.gemini_api_key = gemini_api_key
-        self.gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}" if gemini_api_key else None
+        self.gemini_url = _gemini_generate_url(gemini_api_key)
         self.enabled = bool(gemini_api_key)
     
     def validate_plant_image(self, image_path: str) -> Dict[str, Any]:
@@ -136,7 +151,7 @@ class PlantIdentificationService:
         self.plantnet_api_key = plantnet_api_key
         self.enabled = bool(gemini_api_key)
         
-        self.gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}" if gemini_api_key else None
+        self.gemini_url = _gemini_generate_url(gemini_api_key)
         self.plantid_url = "https://api.plant.id/identify"
         self.plantnet_url = "https://my-api.plantnet.org/v2/identify/all"
         logger.info(
@@ -406,7 +421,7 @@ class CareRecommendationService:
     
     def __init__(self, gemini_api_key: str):
         self.gemini_api_key = gemini_api_key
-        self.gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_api_key}"
+        self.gemini_url = _gemini_generate_url(gemini_api_key)
         self.care_rules = self._load_care_rules()
     
     def _load_care_rules(self) -> Dict[str, Any]:

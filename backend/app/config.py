@@ -37,6 +37,10 @@ class Settings:
     YOLLA_SMS_API_KEY: str = _env_str("YOLLA_SMS_API_KEY")
     YOLLA_SMS_API_BASE: str = _env_str("YOLLA_SMS_API_BASE", "https://yoolasms.com/api/v1").rstrip("/")
     GEMINI_API_KEY: str = _env_str("GEMINI_API_KEY")
+    # Gemini model used for image validation, plant ID and care recommendations.
+    # Note: `gemini-2.0-flash` has been retired from the project's model
+    # registry and returns HTTP 404, so the default is `gemini-2.5-flash`.
+    GEMINI_MODEL: str = _env_str("GEMINI_MODEL", "gemini-2.5-flash")
     PLANTID_API_KEY: str = _env_str("PLANTID_API_KEY")
     PLANTNET_API_KEY: str = _env_str("PLANTNET_API_KEY")
 
