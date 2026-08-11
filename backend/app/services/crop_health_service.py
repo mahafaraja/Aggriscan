@@ -183,7 +183,7 @@ class CropHealthService:
             )
             logger.info("Crop.health HTTP status=%s", response.status_code)
 
-            if response.status_code != 200:
+            if response.status_code not in (200, 201):
                 self._log_error(response)
                 return {
                     "success": False,
@@ -242,7 +242,13 @@ class CropHealthService:
         healthy_named = str(disease_name or "").lower() in ("healthy", "no disease", "none")
 
         if is_healthy or not disease_name or healthy_named:
-            confidence = healthy_prob or crop_prob or 1.0
+            # Confidence reflects the strength of the healthy decision itself:
+            # the "healthy" suggestion's probability, the explicit is_healthy
+            # probability, or (weak fallback) the crop probability.
+            if healthy_named:
+                confidence = disease_prob or crop_prob or 0.5
+            else:
+                confidence = healthy_prob or crop_prob or 0.5
             return {
                 "success": True,
                 "status": "healthy" if (is_healthy or healthy_named) else "no_disease",

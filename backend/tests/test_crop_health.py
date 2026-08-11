@@ -52,6 +52,8 @@ def test_parse_healthy_response():
     assert out["disease_label"] == "Cassava_Healthy"
     assert out["severity"] == "Low"
     assert out["is_healthy"] is True
+    # confidence comes from the "healthy" suggestion, not the crop probability
+    assert out["confidence_score"] == 0.95
 
 
 def test_uses_top_disease_suggestion():
