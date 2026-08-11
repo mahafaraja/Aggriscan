@@ -124,11 +124,16 @@ async def diagnose_crop_image(request: Request):
                 else "low_confidence"
             )
             local_pred["fallback_used"] = True
-            if crop_health_result is not None:
-                # helpful for debugging when the provider was tried
-                local_pred["crop_health_success"] = crop_health_result.get("success", False)
-                local_pred["crop_health_status"] = crop_health_result.get("status")
             prediction = local_pred
+
+        # Surface the Crop.health outcome (without the huge raw payload) so the
+        # provider's own suggestions/recommendations are visible for debugging.
+        if crop_health_result is not None:
+            prediction["crop_health"] = {
+                k: v for k, v in crop_health_result.items() if k != "raw"
+            }
+            prediction["crop_health_success"] = crop_health_result.get("success", False)
+            prediction["crop_health_status"] = crop_health_result.get("status")
 
         return prediction
     except Exception as e:
