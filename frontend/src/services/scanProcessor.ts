@@ -51,22 +51,38 @@ export async function processScanImage({
     });
     
     if (analysisResponse.plant_identified) {
-      // Successfully analyzed with Green-Sense
+            // Successfully analyzed with Green-Sense — plant species + care guide.
+      // NOTE: species identification (PlantNet/Gemini) and DISEASE diagnosis are
+      // separate services. The disease label/severity/confidence must come from
+      // the dedicated /diagnose service (Crop.health / Kindwise + local TFLite
+      // disease model), so always run it here and prefer its result. The
+      // care guide alone only yields generic/common diseases, which is why
+      // scans looked accurate on the crop but wrong on the disease.
       const plantData = analysisResponse.plant_identification.plant_data;
       const summary = analysisResponse.summary;
-      
+
       // Map plant name to crop type
       const cropType = normalizeCropType(plantData.plant_name || plantData.scientific_name);
-      
-      const reportId = Math.random().toString(36).substring(2, 15);
-      const scannedAt = new Date().toISOString();
 
-      // Create diagnostic object compatible with existing structure
+      // Disease diagnosis (Crop.health / Kindwise + TFLite disease model)
+      let diagnosis: any = null;
+      try {
+        console.log('[scanProcessor] Fetching disease diagnosis via /diagnose');
+        diagnosis = await diagnoseImageWithBackend(imageUri, imageBase64);
+      } catch (diagErr) {
+        console.warn('[scanProcessor] Disease diagnosis unavailable, using care guide:', diagErr);
+      }
+
       const careGuide = analysisResponse.care_recommendations?.care_guide;
-      let diseaseLabel = plantData.plant_name;
+      let diseaseLabel: string = plantData.plant_name || 'Unknown';
       let severity: 'Low' | 'Medium' | 'High' = 'Low';
+      let confidenceScore: number = summary.confidence;
 
-      if (careGuide) {
+      if (diagnosis) {
+        diseaseLabel = diagnosis.disease_label || diseaseLabel;
+        severity = (diagnosis.severity as 'Low' | 'Medium' | 'High') || 'Low';
+        confidenceScore = diagnosis.confidence_score ?? confidenceScore;
+      } else if (careGuide) {
         const diseaseInfo = (careGuide as any).disease_info;
         if (diseaseInfo?.name) {
           diseaseLabel = diseaseInfo.name;
@@ -77,13 +93,16 @@ export async function processScanImage({
         }
       }
 
+      const reportId = Math.random().toString(36).substring(2, 15);
+      const scannedAt = new Date().toISOString();
+
       const diagnostic = {
         crop_type: cropType,
         disease_label: diseaseLabel,
-        confidence_score: summary.confidence,
+        confidence_score: confidenceScore,
         severity,
         detected_raw_crop: plantData.plant_name,
-        model_used: summary.service_used,
+        model_used: (diagnosis && diagnosis.model_used) || summary.service_used,
         plant_analysis: analysisResponse,
       };
 
@@ -92,7 +111,7 @@ export async function processScanImage({
           id: reportId,
           crop_type: cropType,
           disease_label: diseaseLabel,
-          confidence_score: summary.confidence,
+          confidence_score: confidenceScore,
           latitude,
           longitude,
           severity,

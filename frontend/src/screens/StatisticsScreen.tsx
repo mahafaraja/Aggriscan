@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { getLocalHistory } from '../services/db';
+import { getLocalHistory, getPendingReports } from '../services/db';
 import { syncOfflineReports } from '../services/sync';
 import { getUserStatistics, UserStatisticsResponse } from '../services/backendApi';
 import { theme } from '../theme/Index';
@@ -68,31 +68,51 @@ function StatisticsScreen({ onNavigate, onBack }: StatisticsScreenProps) {
     }
   };
 
+    const _safePendingCount = async (): Promise<number> => {
+    try {
+      const pending = await getPendingReports();
+      return pending.length;
+    } catch (error) {
+      console.error('Statistics: Error reading pending reports', error);
+      return 0;
+    }
+  };
+
   const loadBackendStats = async () => {
     setIsLoadingStats(true);
     try {
       const data: UserStatisticsResponse = await getUserStatistics();
+      const pendingCount = await _safePendingCount();
       setStatsSource('backend');
-      setTotalScans(data.total_scans);
+      // Backend holds synced reports; local holds offline/pending records that
+      // may not have been uploaded yet. Surface both so statistics always
+      // reflect everything recorded on the device.
+      setPendingSync(pendingCount);
+      setTotalScans(data.total_scans + pendingCount);
       setHealthyCount(data.healthy_count);
       setDiseasedCount(data.diseased_count);
       setDiseasesDetected(data.diseases_detected);
       setDiseasesList(data.diseases_list || []);
       setAvgConfidence(data.avg_confidence);
-      setPendingSync(0);
-      setAvgProcessingTime(0);
+      // avgProcessingTime is only tracked locally; keep the value set above.
     } catch (error) {
-      console.error("Dashboard: Backend stats failed, falling back to local", error);
+      console.error('Statistics: Backend stats unavailable, keeping local data:', error);
       setStatsSource('local');
-      await loadLocalStats();
     } finally {
       setIsLoadingStats(false);
     }
   };
 
   useEffect(() => {
-    loadBackendStats();
-    const interval = setInterval(loadBackendStats, 10000);
+    // Local stats are the offline-first baseline (always recorded on device).
+    // Backend stats are an enhancement on top — only shown when authenticated.
+    // Loading local first guarantees the screen never shows "nothing recorded".
+    const refresh = async () => {
+      await loadLocalStats();
+      await loadBackendStats();
+    };
+    refresh();
+    const interval = setInterval(refresh, 10000);
     return () => clearInterval(interval);
   }, []);
 
